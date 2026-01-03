@@ -1,0 +1,46 @@
+# --------------------
+# OS / System files
+# --------------------
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# --------------------
+# Python virtual environments
+# --------------------
+venv/
+.env/
+.venv/
+env/
+
+# --------------------
+# Python cache / compiled files
+# --------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# --------------------
+# VS Code settings (optional)
+# --------------------
+.vscode/
+
+# --------------------
+# Logs & temp files
+# --------------------
+*.log
+*.tmp
+*.swp
+
+# --------------------
+# Environment / secrets
+# --------------------
+.env.local
+.env.*.local
+
+# --------------------
+# Git
+# --------------------
+*.orig
