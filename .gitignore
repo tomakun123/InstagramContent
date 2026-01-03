@@ -20,6 +20,8 @@ env/
 # Misc Files and Folders
 # --------------------
 useless_rn
+*.mp3
+*.mp4
 
 # --------------------
 # Python cache / compiled files

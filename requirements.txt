@@ -5,3 +5,6 @@ moviepy
 tqdm
 numpy
 pydub
+openai
+openai-whisper
+whisper-timestamped
