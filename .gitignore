@@ -15,6 +15,11 @@ venv/
 env/
 
 # --------------------
+# Misc Files and Folders
+# --------------------
+useless_rn
+
+# --------------------
 # Python cache / compiled files
 # --------------------
 __pycache__/
