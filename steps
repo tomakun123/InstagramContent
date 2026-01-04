@@ -60,4 +60,4 @@ n8n
       1. Name: Story (or whatever you want)
       2. Data Type: Binary Data
       3. Expression: {{ $json.output[0].content[0].text }}
-   3. 
+   3. Now Look at CHATGPT Prompt after you did this on laptop
