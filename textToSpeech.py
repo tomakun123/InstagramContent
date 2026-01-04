@@ -1,8 +1,11 @@
+# Imports for textToSpeech
 import requests
 from tqdm import tqdm
+import sys
+from pathlib import Path
 
 URL = "https://developer.voicemaker.in/voice/api"
-API_KEY = "API-KEY"
+API_KEY = "72140430-13b8-11f0-9aa7-3f1fd6fd0a49"
 
 headers = {
     "Authorization": f"Bearer {API_KEY}",
@@ -10,8 +13,12 @@ headers = {
 }
 
 # Read text from file
-with open("post1.txt", "r", encoding="utf-8") as file:
-    text = file.read()
+# with open("post1.txt", "r", encoding="utf-8") as file:
+#     text = file.read()
+
+file_path = Path(sys.argv[1])
+text = file_path.read_text(encoding="utf-8")
+print("Loaded: ", file_path)
 
 data = {
     "Engine": "neural",

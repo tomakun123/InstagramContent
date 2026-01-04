@@ -24,6 +24,7 @@ useless_rn
 *.mp4
 package-lock.json
 package.json
+noteToSelf
 
 # --------------------
 # Python cache / compiled files

@@ -1,6 +1,6 @@
 n8n
 
-1. in terminal run: npx n8n
+1. in terminal run: ```npx n8n``` and can use ```n8n start``` after (later may become ```npx dotenv-cli -- n8n start```)
 
 2. Download model that is on GITHUB: https://github.com/tomakun123/LocallyHostedLM_Mistral-7B-Instruct-v0.3 which will allow you to locally host a Open-AI text generation model for free
 
@@ -52,12 +52,37 @@ n8n
         Begin the story immediately. Do not include a title or preface.
         ```
 
-6. Make it "When clicking 'Execute workflow'" for executing the "Message a model" (step 4)
+6. (OPTIONAL) Create File Title to be used
+   1. Read counter.txt found in HorrorStories folder
+   2. Extract from Text File (counter to JSON)
+   3. Create 'Edit Fields (Set)' node (Name : Value)
+      1. counterRaw : {{ ($json.text ?? $json.content ?? $json.data ?? $json.fileContent ?? '').toString().trim() }}
+      2. storyNum : {{ parseInt(($json.text ?? $json.content ?? $json.data ?? $json.fileContent ?? '0').toString().trim() || '0', 10) + 1 }}
+      3. dateStr : {{ $now.toFormat('yyyy-LL-dd') }}
+   4. Create 'Edit Fields (Set)' node (Name : Value)
+      1. storyFileName : {{ 'HorrorStory' + $json.storyNum + '_' + $json.dateStr + '.txt' }}
+      2. counterValue : {{ $json.storyNum.toString() }}
+   5. Convert to Text File (Use counterValue from before as Input Field)
+   6. Write File to Disk 
+      1. n8n default path: .../.n8n-files/story.txt (May need to mkdir). If you want to change this path, create .env file and insert ```N8N_RESTRICT_FILE_ACCESS_TO=INSERT_FILE_PATH```, then run ```npx dotenv-cli -- n8n start``` instead of ```n8n start```
+      2. for Input Binary Field use counterValue txt file from step 5
+   - Should look like this:
+         ![alt text](images/fileTitleCreationWorkflow.png)
 
-7. Next goal is to pull the output text into a txt file that will be used by python scripts. In order to do this follow steps:
-   1. Create new action, 'Edit Fields (Set)'
-   2. Add Field
-      1. Name: Story (or whatever you want)
-      2. Data Type: Binary Data
-      3. Expression: {{ $json.output[0].content[0].text }}
-   3. Now Look at CHATGPT Prompt after you did this on laptop
+7. Now connect step 6 to "Message a model" node (step 4), this will be the start of the horror story generator
+
+8. Next goal is to pull the output text into a txt file that will be used by python scripts. In order to do this follow steps:
+   1. Create new action, 'Edit Fields (Set)' node (Name : Value)
+      1. Story : {{ $json.output[0].content[0].text }}
+   2. Convert to Text File
+      1. Text Input Field will be Story
+   3. Write File to Disk
+      1. File Path and Name (may have to edit .env file)
+   
+   
+   
+   
+   
+   Allowed Path: C:/Users/Thomas M/.n8n-files/story.txt 
+      2. Use npx dotenv-cli -- n8n start
+         1. env path: C:\Users\Thomas M\Desktop\InstagramContent\HorrorStories\story.txt

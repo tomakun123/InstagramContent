@@ -8,3 +8,4 @@ pydub
 openai
 openai-whisper
 whisper-timestamped
+watchdog
