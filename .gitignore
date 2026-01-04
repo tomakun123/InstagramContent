@@ -22,6 +22,8 @@ env/
 useless_rn
 *.mp3
 *.mp4
+package-lock.json
+package.json
 
 # --------------------
 # Python cache / compiled files
@@ -53,3 +55,4 @@ __pycache__/
 # Git
 # --------------------
 *.orig
+node_modules

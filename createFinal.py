@@ -16,8 +16,7 @@ audio_clip = AudioFileClip("finalOutput.mp3")
 # Select random segment of video
 start_time = random.uniform(0, video_clip.duration - audio_clip.duration)
 # New Video with New Duration
-video_segment = video_clip.subclipped(start_time, start_time + audio_clip.duration)  
-# Fixed to use subclip not subclipped
+video_segment = video_clip.subclip(start_time, start_time + audio_clip.duration)
 print(f"Using video segment from {start_time:.2f}s to {start_time + audio_clip.duration:.2f}s")
 
 print("Clip duration: {}".format(video_segment.duration))  # Cuting will update duration
@@ -25,7 +24,6 @@ print("Clip fps: {}".format(video_segment.fps))  # and keep fps
 
 # And finally we can write the result into a file
 # Here we just save as MP4, inheriting FPS, etc. from final_clip
-final_clip = video_segment.with_audio(audio_clip)
 
 # Get .srt file from video
 def get_transcribed_text(filename):
@@ -100,17 +98,7 @@ transcribed_text = get_transcribed_text("finalOutput.mp3")
 # Generate text elements for video using transcribed text
 text_clip_list = get_text_clips(text=transcribed_text)
 # Create a CompositeVideoClip that we write to a file
-final_clip = CompositeVideoClip([video_segment] + text_clip_list)
+final_clip = CompositeVideoClip([video_segment] + text_clip_list).set_audio(audio_clip)
 
-final_clip = final_clip.with_audio(video_segment.audio)
-
-final_clip.write_videofile("Sub.mp4", codec="libx264")
-
-video_clip = VideoFileClip("Sub.mp4")  # for videos
-# video file clips already have fps and duration
-print("Clip duration: {}".format(video_clip.duration))
-print("Clip fps: {}".format(video_clip.fps))
-
-final_clip = video_clip.with_audio(audio_clip)
-
+# Write the final video once (video with subtitles + audio)
 final_clip.write_videofile("final.mp4", codec="libx264")

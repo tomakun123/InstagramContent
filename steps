@@ -1,0 +1,63 @@
+n8n
+
+1. in terminal run: npx n8n
+
+2. Download model that is on GITHUB: https://github.com/tomakun123/LocallyHostedLM_Mistral-7B-Instruct-v0.3 which will allow you to locally host a Open-AI text generation model for free
+
+3. Use base URL: http://127.0.0.1:1234/v1 (if that doesn't work use: http://host.docker.internal:1234/v1) to connect to n8n workflow
+
+4. Create new action: OpenAI-->Message a model, and follow steps to fill out credential 
+   1. Click Credential to connet with and select '+ Create new credential' 
+   2. Fill out API-Key "local" (any unempty will work)
+   3. Using Base URL as step 3
+   4. Create credential and select it
+
+5. Select under Model "META-LLAMA-3.1-8B-INSTRUCT" (or your downloaded model on server), under Role "User", under prompt:
+   1. ```
+            You are a skilled horror fiction writer.
+
+        Write a self-contained horror short story between 500 and 750 words.
+
+        STYLE & TONE:
+        - Slow-burn, atmospheric horror
+        - Serious and unsettling, not comedic
+        - Focus on psychological dread rather than gore
+        - Language should be vivid, sensory, and precise
+        - Favor specificity over abstraction
+
+        STRUCTURE:
+        - Use a clear beginning, middle, and end
+        - The final section must contain a concrete, disturbing development (not just a reveal)
+        - The ending should recontextualize earlier details in an unsettling way
+        - Avoid exposition dumps; reveal information gradually
+        - Maintain consistent pacing throughout
+
+        NARRATIVE CONSTRAINTS:
+        - Write in first person
+        - Set the story in a familiar, ordinary place made unsettling
+        - Limit the number of characters (1–3 total)
+        - The horror should stem from something subtly “wrong,” not overt monsters
+
+        ENDING REQUIREMENTS:
+        - The story must conclude with a specific implication or consequence
+        - Do not end immediately after a realization; show its impact through action or observation
+        - Avoid summarizing the horror in abstract terms
+
+        WRITING GUIDELINES:
+        - Use complete sentences and natural paragraph breaks
+        - Avoid clichés, stock phrases, and familiar horror language
+        - Do not explain the horror directly; let implications and details carry meaning
+        - Keep the prose grounded and realistic
+
+        Begin the story immediately. Do not include a title or preface.
+        ```
+
+6. Make it "When clicking 'Execute workflow'" for executing the "Message a model" (step 4)
+
+7. Next goal is to pull the output text into a txt file that will be used by python scripts. In order to do this follow steps:
+   1. Create new action, 'Edit Fields (Set)'
+   2. Add Field
+      1. Name: Story (or whatever you want)
+      2. Data Type: Binary Data
+      3. Expression: {{ $json.output[0].content[0].text }}
+   3. 
