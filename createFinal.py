@@ -16,7 +16,7 @@ audio_clip = AudioFileClip("finalOutput.mp3")
 # Select random segment of video
 start_time = random.uniform(0, video_clip.duration - audio_clip.duration)
 # New Video with New Duration
-video_segment = video_clip.subclip(start_time, start_time + audio_clip.duration)
+video_segment = video_clip.subclipped(start_time, start_time + audio_clip.duration)
 print(f"Using video segment from {start_time:.2f}s to {start_time + audio_clip.duration:.2f}s")
 
 print("Clip duration: {}".format(video_segment.duration))  # Cuting will update duration
@@ -59,7 +59,7 @@ def get_text_clips(text, max_chars_per_clip=20):
                         size=(1920, 1080),
                         stroke_width=5,
                         stroke_color="black",
-                        font="use.ttf",
+                        font="font/use.ttf",
                         color="white"
                     )
                     .with_start(current_start)
@@ -81,7 +81,7 @@ def get_text_clips(text, max_chars_per_clip=20):
                     size=(1920, 1080),
                     stroke_width=5,
                     stroke_color="black",
-                    font="use.ttf",
+                    font="font/use.ttf",
                     color="white"
                 )
                 .with_start(current_start)
@@ -98,7 +98,7 @@ transcribed_text = get_transcribed_text("finalOutput.mp3")
 # Generate text elements for video using transcribed text
 text_clip_list = get_text_clips(text=transcribed_text)
 # Create a CompositeVideoClip that we write to a file
-final_clip = CompositeVideoClip([video_segment] + text_clip_list).set_audio(audio_clip)
+final_clip = CompositeVideoClip([video_segment] + text_clip_list).with_audio(audio_clip)
 
 # Write the final video once (video with subtitles + audio)
 final_clip.write_videofile("final.mp4", codec="libx264")
