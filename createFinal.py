@@ -3,6 +3,7 @@ from moviepy.video.tools.subtitles import SubtitlesClip
 import random
 import numpy as np
 import torch
+import time
 
 import whisper_timestamped as whisper
 
@@ -31,6 +32,12 @@ output_path = OUTPUT_DIR / output_filename
 print(f"Saving video to: {output_path}")
 
 ########################################################################
+# ----------------- helpers -----------------
+def format_time(seconds: float) -> str:
+    minutes = int(seconds // 60)
+    remaining_seconds = seconds % 60
+    return f"{minutes}m {remaining_seconds:.2f}s"
+# -------------------------------------------
 
 video_clip = VideoFileClip("MCParkour.mp4")  # for videos
 video_clip = video_clip.without_audio()
@@ -121,17 +128,43 @@ def get_text_clips(text, max_chars_per_clip=20):
 
     return text_clips
 
+# ===================== SUBTITLES TIMER =====================
+subtitle_start = time.perf_counter()
+
 # Loading the video as a VideoFileClip
 transcribed_text = get_transcribed_text("finalOutput.mp3")
-# Load the audio in the video to transcribe it and get transcribed text
-
 # Generate text elements for video using transcribed text
 text_clip_list = get_text_clips(text=transcribed_text)
+
+subtitle_end = time.perf_counter()
+subtitle_time = subtitle_end - subtitle_start
+# ===========================================================
+
 # Create a CompositeVideoClip that we write to a file
 final_clip = CompositeVideoClip([video_segment] + text_clip_list).with_audio(audio_clip)
+
+# ===================== VIDEO TIMER =========================
+video_start = time.perf_counter()
 
 # Write the final video once (video with subtitles + audio)
 final_clip.write_videofile(
     str(output_path),
-    codec="libx264"
+    codec="h264_nvenc",
+    audio_codec="aac",
+    fps=video_segment.fps,
+    preset="p4",                 # NVENC preset (p1 fastest, p7 best quality) depending on build
+    ffmpeg_params=["-pix_fmt", "yuv420p"]
 )
+
+video_end = time.perf_counter()
+video_time = video_end - video_start
+# ===========================================================
+
+total_time = subtitle_time + video_time
+
+print("\n====== PERFORMANCE SUMMARY ======")
+print(f"Subtitles (Whisper + TextClips): {format_time(subtitle_time)}")
+print(f"Video render (NVENC):            {format_time(video_time)}")
+print(f"Total pipeline time:             {format_time(total_time)}")
+print("================================\n")
+
