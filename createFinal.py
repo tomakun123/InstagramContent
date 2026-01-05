@@ -2,6 +2,7 @@ from moviepy import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip
 from moviepy.video.tools.subtitles import SubtitlesClip
 import random
 import numpy as np
+import torch
 
 import whisper_timestamped as whisper
 
@@ -11,16 +12,14 @@ from datetime import datetime
 
 # -------- CONFIG --------
 OUTPUT_DIR = Path("HorrorVideos")
-COUNTER_FILE = Path("counter.txt")
+COUNTER_FILE = Path("HorrorStories/counter.txt")
 
 # Ensure output directory exists
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Read counter
 if COUNTER_FILE.exists():
-    story_number = int(COUNTER_FILE.read_text().strip())
-else:
-    story_number = 1  # default if missing
+    story_number = (int(COUNTER_FILE.read_text().strip())-1)
 
 # Get today's date
 date_str = datetime.now().strftime("%Y-%m-%d")
@@ -56,9 +55,12 @@ print("Clip fps: {}".format(video_segment.fps))  # and keep fps
 # Get .srt file from video
 def get_transcribed_text(filename):
     audio = whisper.load_audio(filename)
-    model = whisper.load_model("small", device="cpu")
-    results = whisper.transcribe(model, audio, language="en")
 
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print("Whisper device:", device)
+
+    model = whisper.load_model("small", device=device)
+    results = whisper.transcribe(model, audio, language="en")
     return results["segments"]
 
 def get_text_clips(text, max_chars_per_clip=20):
