@@ -91,17 +91,20 @@ def get_text_clips(text, max_chars_per_clip=20):
                 text_clips.append(
                     TextClip(
                         text=current_text,
-                        method='caption',
+                        method="caption",          # ✅ wrapping
                         font_size=30,
-                        size=(1920, 1080),
+                        size=(1400, 260),         # ✅ wrap to 1400px wide; NOT full frame
                         stroke_width=5,
                         stroke_color="black",
                         font="font/use.ttf",
-                        color="white"
+                        color="white",
+                        text_align="center",
+                        interline=6,               # ✅ more line spacing
+                        margin=(20, 30)            # ✅ (x, y) padding INSIDE box
                     )
+                    .with_position(("center", "center"))
                     .with_start(current_start)
                     .with_end(current_end)
-                    .with_position("center")
                 )
                 # Start a new group
                 current_text = word["text"]
@@ -113,17 +116,20 @@ def get_text_clips(text, max_chars_per_clip=20):
             text_clips.append(
                 TextClip(
                     text=current_text,
-                    method='caption',
-                    font_size=30,
-                    size=(1920, 1080),
+                    method="caption",          # ✅ wrapping
+                    font_size=34,
+                    size=(1400, 260),         # ✅ wrap to 1400px wide; NOT full frame
                     stroke_width=5,
                     stroke_color="black",
                     font="font/use.ttf",
-                    color="white"
+                    color="white",
+                    text_align="center",
+                    interline=6,               # ✅ more line spacing
+                    margin=(20, 30)            # ✅ (x, y) padding INSIDE box
                 )
+                .with_position(("center", "center"))
                 .with_start(current_start)
                 .with_end(current_end)
-                .with_position("center")
             )
 
     return text_clips
@@ -141,7 +147,8 @@ subtitle_time = subtitle_end - subtitle_start
 # ===========================================================
 
 # Create a CompositeVideoClip that we write to a file
-final_clip = CompositeVideoClip([video_segment] + text_clip_list).with_audio(audio_clip)
+final_clip = CompositeVideoClip([video_segment] + text_clip_list)
+final_clip = final_clip.with_audio(audio_clip)
 
 # ===================== VIDEO TIMER =========================
 video_start = time.perf_counter()
@@ -152,13 +159,21 @@ final_clip.write_videofile(
     codec="h264_nvenc",
     audio_codec="aac",
     fps=video_segment.fps,
-    preset="p4",                 # NVENC preset (p1 fastest, p7 best quality) depending on build
-    ffmpeg_params=["-pix_fmt", "yuv420p"]
+    preset="p4",
+    ffmpeg_params=["-pix_fmt", "yuv420p"],
+    temp_audiofile="temp-audio.m4a",
+    remove_temp=True
 )
+
 
 video_end = time.perf_counter()
 video_time = video_end - video_start
 # ===========================================================
+
+final_clip.close()
+video_segment.close()
+video_clip.close()
+audio_clip.close()
 
 total_time = subtitle_time + video_time
 
