@@ -5,6 +5,34 @@ import numpy as np
 
 import whisper_timestamped as whisper
 
+########### Allows file to save in specific directory ######################################
+from pathlib import Path
+from datetime import datetime
+
+# -------- CONFIG --------
+OUTPUT_DIR = Path("HorrorVideos")
+COUNTER_FILE = Path("counter.txt")
+
+# Ensure output directory exists
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# Read counter
+if COUNTER_FILE.exists():
+    story_number = int(COUNTER_FILE.read_text().strip())
+else:
+    story_number = 1  # default if missing
+
+# Get today's date
+date_str = datetime.now().strftime("%Y-%m-%d")
+
+# Build filename
+output_filename = f"HorrorStory{story_number}_{date_str}.mp4"
+output_path = OUTPUT_DIR / output_filename
+
+print(f"Saving video to: {output_path}")
+
+########################################################################
+
 video_clip = VideoFileClip("MCParkour.mp4")  # for videos
 video_clip = video_clip.without_audio()
 # video file clips already have fps and duration
@@ -101,4 +129,7 @@ text_clip_list = get_text_clips(text=transcribed_text)
 final_clip = CompositeVideoClip([video_segment] + text_clip_list).with_audio(audio_clip)
 
 # Write the final video once (video with subtitles + audio)
-final_clip.write_videofile("final.mp4", codec="libx264")
+final_clip.write_videofile(
+    str(output_path),
+    codec="libx264"
+)
