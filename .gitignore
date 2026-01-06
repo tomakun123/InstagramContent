@@ -25,6 +25,7 @@ useless_rn
 package-lock.json
 package.json
 noteToSelf
+*.m4a
 
 # --------------------
 # Python cache / compiled files

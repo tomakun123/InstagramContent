@@ -45,87 +45,92 @@ video_clip = video_clip.without_audio()
 print("Clip duration: {}".format(video_clip.duration))
 print("Clip fps: {}".format(video_clip.fps))
 
-audio_clip = AudioFileClip("finalOutput.mp3")
+audio_clip = AudioFileClip("finalOutput.mp3")  # keep for now (we’ll re-bind after segment)
 
 # Select random segment of video
 start_time = random.uniform(0, video_clip.duration - audio_clip.duration)
-# New Video with New Duration
 video_segment = video_clip.subclipped(start_time, start_time + audio_clip.duration)
-print(f"Using video segment from {start_time:.2f}s to {start_time + audio_clip.duration:.2f}s")
 
-print("Clip duration: {}".format(video_segment.duration))  # Cuting will update duration
-print("Clip fps: {}".format(video_segment.fps))  # and keep fps
+# ✅ re-bind audio to segment duration (more robust muxing)
+audio_clip = (
+    AudioFileClip("finalOutput.mp3")
+    .with_start(0)
+    .with_duration(video_segment.duration)
+)
 
-# And finally we can write the result into a file
-# Here we just save as MP4, inheriting FPS, etc. from final_clip
-
-# Get .srt file from video
 def get_transcribed_text(filename):
     audio = whisper.load_audio(filename)
-
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Whisper device:", device)
 
     model = whisper.load_model("small", device=device)
+
+    if device == "cuda":
+        torch.cuda.synchronize()
     results = whisper.transcribe(model, audio, language="en")
+    if device == "cuda":
+        torch.cuda.synchronize()
+
     return results["segments"]
 
 def get_text_clips(text, max_chars_per_clip=35):
     text_clips = []
 
     for segment in text:
-        words = segment["words"]
+        words = segment.get("words") or []
+        if not words:
+            continue
+
         current_text = ""
         current_start = words[0]["start"]
         current_end = words[0]["end"]
 
         for word in words:
-            # Check if adding the next word exceeds the limit
             if len(current_text) + len(word["text"]) + 1 <= max_chars_per_clip:
                 if current_text:
                     current_text += " "
                 current_text += word["text"]
                 current_end = word["end"]
             else:
-                # Create the clip for the current group
+                safe_text = current_text + "\n"  # ✅ prevents descender clipping
                 text_clips.append(
                     TextClip(
-                        text=current_text,
-                        method="caption",          # ✅ wrapping
+                        text=safe_text,
+                        method="caption",
                         font_size=34,
-                        size=(1400, 260),         # ✅ wrap to 1400px wide; NOT full frame
+                        size=(1400, 260),
                         stroke_width=5,
                         stroke_color="black",
                         font="font/use.ttf",
                         color="white",
                         text_align="center",
-                        interline=6,               # ✅ more line spacing
-                        margin=(20, 30)            # ✅ (x, y) padding INSIDE box
+                        interline=6,
+                        margin=(20, 30)
                     )
                     .with_position(("center", "center"))
                     .with_start(current_start)
                     .with_end(current_end)
                 )
-                # Start a new group
+
                 current_text = word["text"]
                 current_start = word["start"]
                 current_end = word["end"]
 
-        # Add the last clip if any text remains
         if current_text:
+            safe_text = current_text + "\n"  # ✅ prevents descender clipping
             text_clips.append(
                 TextClip(
-                    text=current_text,
-                    method="caption",          # ✅ wrapping
+                    text=safe_text,
+                    method="caption",
                     font_size=34,
-                    size=(1400, 260),         # ✅ wrap to 1400px wide; NOT full frame
+                    size=(1400, 260),
                     stroke_width=5,
                     stroke_color="black",
                     font="font/use.ttf",
                     color="white",
                     text_align="center",
-                    interline=6,               # ✅ more line spacing
-                    margin=(20, 30)            # ✅ (x, y) padding INSIDE box
+                    interline=6,
+                    margin=(20, 30)
                 )
                 .with_position(("center", "center"))
                 .with_start(current_start)
@@ -153,14 +158,15 @@ final_clip = final_clip.with_audio(audio_clip)
 # ===================== VIDEO TIMER =========================
 video_start = time.perf_counter()
 
-# Write the final video once (video with subtitles + audio)
+# write_videofile: ✅ audio=True + faststart
 final_clip.write_videofile(
     str(output_path),
     codec="h264_nvenc",
+    audio=True,
     audio_codec="aac",
     fps=video_segment.fps,
     preset="p4",
-    ffmpeg_params=["-pix_fmt", "yuv420p"],
+    ffmpeg_params=["-pix_fmt", "yuv420p", "-movflags", "+faststart"],
     temp_audiofile="temp-audio.m4a",
     remove_temp=True
 )
@@ -182,4 +188,3 @@ print(f"Subtitles (Whisper + TextClips): {format_time(subtitle_time)}")
 print(f"Video render (NVENC):            {format_time(video_time)}")
 print(f"Total pipeline time:             {format_time(total_time)}")
 print("================================\n")
-
