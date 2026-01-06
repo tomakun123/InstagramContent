@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 URL = "https://developer.voicemaker.in/voice/api"
-API_KEY = "72140430-13b8-11f0-9aa7-3f1fd6fd0a49"
+API_KEY = ""
 
 headers = {
     "Authorization": f"Bearer {API_KEY}",
