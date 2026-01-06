@@ -26,6 +26,7 @@ package-lock.json
 package.json
 noteToSelf
 *.m4a
+HorrorStory*.txt
 
 # --------------------
 # Python cache / compiled files

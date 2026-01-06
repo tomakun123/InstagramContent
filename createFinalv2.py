@@ -20,7 +20,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Read counter
 if COUNTER_FILE.exists():
-    story_number = (int(COUNTER_FILE.read_text().strip()))
+    story_number = int(COUNTER_FILE.read_text().strip())
 
 # Get today's date
 date_str = datetime.now().strftime("%Y-%m-%d")
@@ -29,7 +29,11 @@ date_str = datetime.now().strftime("%Y-%m-%d")
 output_filename = f"HorrorStory{story_number}_{date_str}.mp4"
 output_path = OUTPUT_DIR / output_filename
 
-print(f"Saving video to: {output_path}")
+# ✅ temp file still ends with .mp4 so ffmpeg knows the container
+temp_output_path = output_path.with_name(output_path.stem + ".part" + output_path.suffix)
+
+print(f"Saving video to (temp): {temp_output_path}")
+print(f"Final video will be:    {output_path}")
 
 ########################################################################
 # ----------------- helpers -----------------
@@ -39,13 +43,13 @@ def format_time(seconds: float) -> str:
     return f"{minutes}m {remaining_seconds:.2f}s"
 # -------------------------------------------
 
-video_clip = VideoFileClip("MCParkour.mp4")  # for videos
+video_clip = VideoFileClip("HorrorVideos/MCParkour.mp4")  # for videos
 video_clip = video_clip.without_audio()
-# video file clips already have fps and duration
 print("Clip duration: {}".format(video_clip.duration))
 print("Clip fps: {}".format(video_clip.fps))
 
-audio_clip = AudioFileClip("finalOutput.mp3")  # keep for now (we’ll re-bind after segment)
+audio_src = f"HorrorAudio/HorrorAudioMusicOutput{story_number}_{date_str}.mp3"
+audio_clip = AudioFileClip(audio_src)
 
 # Select random segment of video
 start_time = random.uniform(0, video_clip.duration - audio_clip.duration)
@@ -53,7 +57,7 @@ video_segment = video_clip.subclipped(start_time, start_time + audio_clip.durati
 
 # ✅ re-bind audio to segment duration (more robust muxing)
 audio_clip = (
-    AudioFileClip("finalOutput.mp3")
+    AudioFileClip(audio_src)
     .with_start(0)
     .with_duration(video_segment.duration)
 )
@@ -142,25 +146,22 @@ def get_text_clips(text, max_chars_per_clip=35):
 # ===================== SUBTITLES TIMER =====================
 subtitle_start = time.perf_counter()
 
-# Loading the video as a VideoFileClip
-transcribed_text = get_transcribed_text("finalOutput.mp3")
-# Generate text elements for video using transcribed text
+transcribed_text = get_transcribed_text(audio_src)
 text_clip_list = get_text_clips(text=transcribed_text)
 
 subtitle_end = time.perf_counter()
 subtitle_time = subtitle_end - subtitle_start
 # ===========================================================
 
-# Create a CompositeVideoClip that we write to a file
 final_clip = CompositeVideoClip([video_segment] + text_clip_list)
 final_clip = final_clip.with_audio(audio_clip)
 
 # ===================== VIDEO TIMER =========================
 video_start = time.perf_counter()
 
-# write_videofile: ✅ audio=True + faststart
+# ✅ write to temp .part first
 final_clip.write_videofile(
-    str(output_path),
+    str(temp_output_path),
     codec="h264_nvenc",
     audio=True,
     audio_codec="aac",
@@ -171,15 +172,19 @@ final_clip.write_videofile(
     remove_temp=True
 )
 
-
 video_end = time.perf_counter()
 video_time = video_end - video_start
 # ===========================================================
 
+# Close resources before rename (helps on Windows file locking)
 final_clip.close()
 video_segment.close()
 video_clip.close()
 audio_clip.close()
+
+# ✅ Atomic finalize: rename .part -> .mp4 so n8n triggers only when complete
+temp_output_path.replace(output_path)
+print(f"✅ Finalized video: {output_path}")
 
 total_time = subtitle_time + video_time
 

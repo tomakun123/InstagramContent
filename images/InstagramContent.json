@@ -48,7 +48,7 @@
             {
               "id": "0762f82b-5765-4346-a730-39baf9dfe10a",
               "name": "storyNum",
-              "value": "={{ $json.counterValue }}",
+              "value": "={{ parseInt($json.counterValue)+1 }}",
               "type": "string"
             },
             {
@@ -83,7 +83,7 @@
             {
               "id": "6a6eda4d-4a49-4194-bd5b-c24237d05342",
               "name": "newCounterValue",
-              "value": "={{ parseInt($json.storyNum, 10) + 1 }}",
+              "value": "={{ parseInt($json.storyNum, 10) }}",
               "type": "string"
             }
           ]
@@ -361,6 +361,11 @@
           }
         ]
       ]
+    },
+    "Write Horror Story to vscode": {
+      "main": [
+        []
+      ]
     }
   },
   "active": false,
@@ -368,7 +373,7 @@
     "executionOrder": "v1",
     "availableInMCP": false
   },
-  "versionId": "cb272533-4558-45d5-b987-479bfbf94f4b",
+  "versionId": "92122aea-8cdc-4b42-a412-bedd44695c8c",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "99760253acafc950b45bca9d40f879d0c42df29fd78f9c11e457ea708e011beb"

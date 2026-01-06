@@ -6,6 +6,30 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 
+########### Allows file to save in specific directory ######################################
+from pathlib import Path
+from datetime import datetime
+
+# -------- CONFIG --------
+OUTPUT_DIR = Path("HorrorAudio")
+COUNTER_FILE = Path("HorrorStories/counter.txt")
+
+# Ensure output directory exists
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# Read counter
+if COUNTER_FILE.exists():
+    story_number = (int(COUNTER_FILE.read_text().strip()))
+
+# Get today's date
+date_str = datetime.now().strftime("%Y-%m-%d")
+
+# Build filename
+output_filename = f"HorrorAudioOutput{story_number}_{date_str}.mp3"
+output_path = OUTPUT_DIR / output_filename
+
+########################################################################
+
 load_dotenv()  # loads .env into environment variables
 
 URL = "https://developer.voicemaker.in/voice/api"
@@ -18,10 +42,6 @@ headers = {
     "Authorization": f"Bearer {API_KEY}",
     "Content-Type": "application/json"
 }
-
-# Read text from file
-# with open("post1.txt", "r", encoding="utf-8") as file:
-#     text = file.read()
 
 file_path = Path(sys.argv[1])
 text = file_path.read_text(encoding="utf-8")
@@ -43,6 +63,8 @@ data = {
 
 response = requests.post(URL, headers=headers, json=data)
 
+print(f"Saving audio to: {output_path}")
+
 if response.status_code == 200:
     result = response.json()
     if result.get("success"):
@@ -52,32 +74,57 @@ if response.status_code == 200:
         total_size = int(audio_response.headers.get('content-length', 0))
         block_size = 1024  # 1 Kibibyte
 
-        with open("voiceOutput.mp3", "wb") as file, tqdm(
+        with open(output_path, "wb") as file, tqdm(
             desc="Downloading",
             total=total_size,
             unit='iB',
             unit_scale=True,
             unit_divisor=1024,
         ) as bar:
-            for data in audio_response.iter_content(block_size):
-                file.write(data)
-                bar.update(len(data))
+            for chunk in audio_response.iter_content(block_size):
+                if chunk:
+                    file.write(chunk)
+                    bar.update(len(chunk))
 
-        print("✅ Audio file saved as output.mp3")
+        print(f"✅ Audio file saved as {output_path}")
     else:
         print("❌ Error in conversion:", result.get("message"))
 else:
     print(f"❌ Request failed with status code {response.status_code}")
     print(response.text)
 
-# From addMusic.py
-
 import subprocess
 from pathlib import Path
 
-voice = Path("voiceOutput.mp3")
-music = Path("musicOutput.mp3")
-out = Path("finalOutput.mp3")
+########### Allows file to save in specific directory ######################################
+from pathlib import Path
+from datetime import datetime
+
+# -------- CONFIG --------
+OUTPUT_DIR = Path("HorrorAudio")
+COUNTER_FILE = Path("HorrorStories/counter.txt")
+
+# Ensure output directory exists
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# Read counter
+if COUNTER_FILE.exists():
+    story_number = (int(COUNTER_FILE.read_text().strip()))
+
+# Get today's date
+date_str = datetime.now().strftime("%Y-%m-%d")
+
+# Build filename
+output_filename = f"HorrorAudioMusicOutput{story_number}_{date_str}.mp3"
+output_path = OUTPUT_DIR / output_filename
+
+print(f"Saving audio to: {output_path}")
+
+########################################################################
+
+voice = Path(f"HorrorAudio/HorrorAudioOutput{story_number}_{date_str}.mp3")
+music = Path("HorrorAudio/musicOutput.mp3")
+out = Path(output_path)
 
 # Lower music volume, loop it to match voice length, then mix
 cmd = [
@@ -94,9 +141,7 @@ cmd = [
 ]
 
 subprocess.run(cmd, check=True)
-print("Wrote:", out)
-
-# From createFinalv2.py
+print("Wrote to:", out)
 
 from moviepy import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip
 from moviepy.video.tools.subtitles import SubtitlesClip
@@ -139,13 +184,13 @@ def format_time(seconds: float) -> str:
     return f"{minutes}m {remaining_seconds:.2f}s"
 # -------------------------------------------
 
-video_clip = VideoFileClip("MCParkour.mp4")  # for videos
+video_clip = VideoFileClip("HorrorVideos/MCParkour.mp4")  # for videos
 video_clip = video_clip.without_audio()
 # video file clips already have fps and duration
 print("Clip duration: {}".format(video_clip.duration))
 print("Clip fps: {}".format(video_clip.fps))
 
-audio_clip = AudioFileClip("finalOutput.mp3")  # keep for now (we’ll re-bind after segment)
+audio_clip = AudioFileClip(f"HorrorAudio/HorrorAudioMusicOutput{story_number}_{date_str}.mp3")  # keep for now (we’ll re-bind after segment)
 
 # Select random segment of video
 start_time = random.uniform(0, video_clip.duration - audio_clip.duration)
@@ -153,7 +198,7 @@ video_segment = video_clip.subclipped(start_time, start_time + audio_clip.durati
 
 # ✅ re-bind audio to segment duration (more robust muxing)
 audio_clip = (
-    AudioFileClip("finalOutput.mp3")
+    AudioFileClip(f"HorrorAudio/HorrorAudioMusicOutput{story_number}_{date_str}.mp3")
     .with_start(0)
     .with_duration(video_segment.duration)
 )
@@ -243,7 +288,7 @@ def get_text_clips(text, max_chars_per_clip=35):
 subtitle_start = time.perf_counter()
 
 # Loading the video as a VideoFileClip
-transcribed_text = get_transcribed_text("finalOutput.mp3")
+transcribed_text = get_transcribed_text(f"HorrorAudio/HorrorAudioMusicOutput{story_number}_{date_str}.mp3")
 # Generate text elements for video using transcribed text
 text_clip_list = get_text_clips(text=transcribed_text)
 

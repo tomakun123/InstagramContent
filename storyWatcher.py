@@ -20,7 +20,7 @@ class StoryHandler(FileSystemEventHandler):
 
         # RUNS TEXT TO SPEECH SCRIPT
         subprocess.run(
-            ["python", "textToSpeech.py", str(path)],
+            ["python", "generateContent.py", str(path)],
             check=True
         )
 

@@ -27,7 +27,7 @@ print(f"Saving audio to: {output_path}")
 
 ########################################################################
 
-voice = Path(f"HorrorAudio/HorrorAudioMusicOutput{story_number}_{date_str}.mp3")
+voice = Path(f"HorrorAudio/HorrorAudioOutput{story_number}_{date_str}.mp3")
 music = Path("HorrorAudio/musicOutput.mp3")
 out = Path(output_path)
 
