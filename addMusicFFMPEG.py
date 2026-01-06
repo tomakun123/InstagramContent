@@ -1,9 +1,35 @@
 import subprocess
 from pathlib import Path
 
-voice = Path("voiceOutput.mp3")
-music = Path("musicOutput.mp3")
-out = Path("finalOutput.mp3")
+########### Allows file to save in specific directory ######################################
+from pathlib import Path
+from datetime import datetime
+
+# -------- CONFIG --------
+OUTPUT_DIR = Path("HorrorAudio")
+COUNTER_FILE = Path("HorrorStories/counter.txt")
+
+# Ensure output directory exists
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# Read counter
+if COUNTER_FILE.exists():
+    story_number = (int(COUNTER_FILE.read_text().strip()))
+
+# Get today's date
+date_str = datetime.now().strftime("%Y-%m-%d")
+
+# Build filename
+output_filename = f"HorrorAudioMusicOutput{story_number}_{date_str}.mp3"
+output_path = OUTPUT_DIR / output_filename
+
+print(f"Saving audio to: {output_path}")
+
+########################################################################
+
+voice = Path(f"HorrorAudio/HorrorAudioMusicOutput{story_number}_{date_str}.mp3")
+music = Path("HorrorAudio/musicOutput.mp3")
+out = Path(output_path)
 
 # Lower music volume, loop it to match voice length, then mix
 cmd = [
@@ -20,4 +46,4 @@ cmd = [
 ]
 
 subprocess.run(cmd, check=True)
-print("Wrote:", out)
+print("Wrote to:", out)
