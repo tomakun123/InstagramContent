@@ -3,6 +3,8 @@ import requests
 from tqdm import tqdm
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+import os
 
 ########### Allows file to save in specific directory ######################################
 from pathlib import Path
@@ -28,17 +30,18 @@ output_path = OUTPUT_DIR / output_filename
 
 ########################################################################
 
+load_dotenv()  # loads .env into environment variables
+
 URL = "https://developer.voicemaker.in/voice/api"
-API_KEY = ""
+API_KEY = os.getenv("VOICEMAKER_API_KEY")
+
+if not API_KEY:
+    raise RuntimeError("VOICEMAKER_API_KEY is missing from .env")
 
 headers = {
     "Authorization": f"Bearer {API_KEY}",
     "Content-Type": "application/json"
 }
-
-# Read text from file
-# with open("post1.txt", "r", encoding="utf-8") as file:
-#     text = file.read()
 
 file_path = Path(sys.argv[1])
 text = file_path.read_text(encoding="utf-8")

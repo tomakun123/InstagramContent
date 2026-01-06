@@ -3,9 +3,16 @@ import requests
 from tqdm import tqdm
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # loads .env into environment variables
 
 URL = "https://developer.voicemaker.in/voice/api"
-API_KEY = ""
+API_KEY = os.getenv("VOICEMAKER_API_KEY")
+
+if not API_KEY:
+    raise RuntimeError("VOICEMAKER_API_KEY is missing from .env")
 
 headers = {
     "Authorization": f"Bearer {API_KEY}",
