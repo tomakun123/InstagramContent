@@ -25,6 +25,9 @@ useless_rn
 package-lock.json
 package.json
 noteToSelf
+*.m4a
+HorrorStory*.txt
+*_metadata.json
 
 # --------------------
 # Python cache / compiled files

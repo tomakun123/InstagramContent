@@ -1,0 +1,34 @@
+Changing to CUDA and CPU usage for subtitles and video rendering
+====== PERFORMANCE SUMMARY ======
+Subtitles (Whisper + TextClips): 75.12 seconds
+Video render (NVENC):            1435.95 seconds, ~24 min
+Total pipeline time:             1511.07 seconds, ~25 min
+================================
+
+Changing TextClip (size) --> text is cut off a little
+====== PERFORMANCE SUMMARY ======
+Subtitles (Whisper + TextClips): 1m 10.95s
+Video render (NVENC):            17m 45.12s
+Total pipeline time:             18m 56.06s
+================================
+
+Added inline and margin
+====== PERFORMANCE SUMMARY ======
+Subtitles (Whisper + TextClips): 1m 6.16s
+Video render (NVENC):            17m 51.32s
+Total pipeline time:             18m 57.49s
+================================
+
+Added to TextClip
+====== PERFORMANCE SUMMARY ======
+Subtitles (Whisper + TextClips): 1m 7.29s
+Video render (NVENC):            19m 12.11s
+Total pipeline time:             20m 19.40s
+================================
+
+Doubling max_chars_per_clip (25-->50) --> not worth it...
+====== PERFORMANCE SUMMARY ======
+Subtitles (Whisper + TextClips): 1m 8.45s
+Video render (NVENC):            18m 47.67s
+Total pipeline time:             19m 56.12s
+================================
