@@ -30,7 +30,7 @@ else:
 date_str = datetime.now().strftime("%Y-%m-%d")
 
 # Build filename
-output_filename = f"HorrorStory{story_number}_{date_str}TEST4.mp4"
+output_filename = f"HorrorStory{story_number}_{date_str}.mp4"
 output_path = OUTPUT_DIR / output_filename
 
 # ✅ temp file still ends with .mp4 so ffmpeg knows the container

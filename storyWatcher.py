@@ -5,7 +5,7 @@ import time
 import subprocess
 
 # CHANGE THIS to your actual folder
-WATCH_DIR = Path(r"C:\Users\Thomas M\Desktop\InstagramContent\HorrorStories")
+WATCH_DIR = Path(r"C:\Users\Thomas M\Desktop\InstagramContent\Metadata")
 
 class StoryHandler(FileSystemEventHandler):
     def on_created(self, event):

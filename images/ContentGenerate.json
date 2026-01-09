@@ -225,7 +225,7 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        544,
+        784,
         560
       ],
       "id": "93180632-30b1-4de0-a086-6a21b9320d7e",
@@ -275,7 +275,7 @@
         "responses": {
           "values": [
             {
-              "content": "=You are writing metadata for short-form horror videos.\n\nGiven the story below, produce:\n\n1) ONE punchy TITLE (max 55 characters).\n2) ONE short HOOK sentence to display as the first subtitle line (max 12 words).\n3) An Instagram Reels caption:\n   - 1–2 sentences\n   - 6–10 relevant hashtags\n4) A TikTok caption:\n   - 1–2 sentences\n   - casual, storytime tone\n   - 4–8 hashtags\n5) A YouTube Shorts caption:\n   - 1–2 sentences\n   - minimal hashtags (2–4), may include #shorts\n\nRules:\n- Make it intriguing, not clickbait.\n- No explicit gore, no slurs.\n- Keep hashtags relevant to horror, mystery, and storytelling.\n- Do NOT repeat hashtags excessively across platforms.\n\nReturn JSON exactly in this schema:\n\n{\n  \"title\": \"...\",\n  \"hook\": \"...\",\n  \"captions\": {\n    \"instagram\": \"...\",\n    \"tiktok\": \"...\",\n    \"youtube\": \"...\"\n  }\n}\n\nSTORY:\n{{ $('Set Story Value').item.json.Story }}"
+              "content": "=You are writing metadata for short-form horror videos.\n\nGiven the story below, produce:\n\n1) ONE punchy TITLE (max 55 characters).\n2) ONE short HOOK sentence to display as the first subtitle line (max 12 words).\n3) An Instagram Reels caption:\n   - 1–2 sentences\n   - 6–10 relevant hashtags\n4) A TikTok caption:\n   - 1–2 sentences\n   - casual, storytime tone\n   - 4–8 hashtags\n5) A YouTube Shorts caption:\n   - 1–2 sentences\n   - minimal hashtags (2–4), may include #shorts\n\nRules:\n- Make it intriguing, not clickbait.\n- No explicit gore, no slurs.\n- Keep hashtags relevant to horror, mystery, and storytelling.\n- Do NOT repeat hashtags excessively across platforms.\n\nReturn JSON exactly in this schema (match EXACTLY):\n\n{\n  \"title\": \"...\",\n  \"hook\": \"...\",\n  \"captions\": {\n    \"instagram\": \"...\",\n    \"tiktok\": \"...\",\n    \"youtube\": \"...\"\n  }\n}\n\nSTORY:\n{{ $('Set Story Value').item.json.Story }}"
             }
           ]
         },
@@ -344,7 +344,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        512,
+        784,
         672
       ],
       "id": "33c51ee7-61ef-4341-8e22-e3a202d8cae4",
@@ -357,7 +357,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        336,
+        608,
         672
       ],
       "id": "66205774-8631-4e6e-b586-688c27308b22",
@@ -380,7 +380,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        720,
+        992,
         672
       ],
       "id": "965f3039-61a0-44af-a869-e7804db1cc03",
@@ -396,7 +396,7 @@
       "type": "n8n-nodes-base.convertToFile",
       "typeVersion": 1.1,
       "position": [
-        928,
+        1200,
         672
       ],
       "id": "0d3acc13-322d-4668-ba8e-accbe3662340",
@@ -412,11 +412,180 @@
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1.1,
       "position": [
-        1136,
+        1408,
         672
       ],
       "id": "5a7eced1-e89d-4874-ab92-bbdb7105a84d",
       "name": "Write Metadata into vscode"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -16,
+        -128
+      ],
+      "id": "12ee5403-745c-4b22-9165-b617bfb9c732",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3e557383-7827-46e2-b623-1e5c0188b58b",
+              "leftValue": "={{ 'C:/Users/Thomas M/Desktop/InstagramContent/HorrorVideos/' + $json.fileName }}",
+              "rightValue": "={{ 'C:/Users/Thomas M/Desktop/InstagramContent/HorrorVideos/' + $('Build Dependent Fields').item.json.storyFileName + '.part.mp4' }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        384,
+        944
+      ],
+      "id": "70957578-5e8b-48a3-9b25-358fe76347c1",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "amount": 35,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        16,
+        944
+      ],
+      "id": "1dd81add-b7ac-4112-a034-f4110d35d985",
+      "name": "Wait",
+      "webhookId": "cf6ba7dd-d9af-43a9-973d-62f614c7b3b8"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ 'C:/Users/Thomas M/Desktop/InstagramContent/HorrorVideos/' + $('Build Dependent Fields').item.json.storyFileName + '.part.mp4' }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        192,
+        944
+      ],
+      "id": "a04df58c-519f-44a7-b77d-cc517793c1a8",
+      "name": "FINALREADPART",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "amount": 10,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        624,
+        864
+      ],
+      "id": "e5b1b4d1-e637-411f-9a87-888dd87ea6b6",
+      "name": "Wait1",
+      "webhookId": "1cb87b05-51ac-4dfe-97a6-330175acb4fa"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "0huoYCudmZmhIQiu",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/0huoYCudmZmhIQiu",
+          "cachedResultName": "NEWEST-WORKFLOW-SHOULD-WORK"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        624,
+        1008
+      ],
+      "id": "af82fdba-a7b1-4651-9418-c27fcf94dd65",
+      "name": "Call 'NEWEST-WORKFLOW-SHOULD-WORK'"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "0huoYCudmZmhIQiu",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/0huoYCudmZmhIQiu",
+          "cachedResultName": "NEWEST-WORKFLOW-SHOULD-WORK"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        816,
+        864
+      ],
+      "id": "790bba1c-0847-4943-bc9a-6fd319317ae5",
+      "name": "Call 'NEWEST-WORKFLOW-SHOULD-WORK'1"
+    },
+    {
+      "parameters": {
+        "content": "Thinking of adding if statement incase model doesnt generate JSON, and then to tell it to reformat and make sure its in JSON",
+        "height": 112,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        304,
+        576
+      ],
+      "id": "9b37fdec-2da0-42fc-89e1-e01dbc7a0923",
+      "name": "Sticky Note3"
     }
   ],
   "pinData": {},
@@ -596,6 +765,68 @@
           }
         ]
       ]
+    },
+    "Write Metadata into vscode": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "FINALREADPART",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FINALREADPART": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call 'NEWEST-WORKFLOW-SHOULD-WORK'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Call 'NEWEST-WORKFLOW-SHOULD-WORK'1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -603,7 +834,7 @@
     "executionOrder": "v1",
     "availableInMCP": false
   },
-  "versionId": "d30b53fe-c2c3-4221-b6db-359a29c9a0d0",
+  "versionId": "66560ee1-f24b-49fd-a2fa-864fccd58117",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "99760253acafc950b45bca9d40f879d0c42df29fd78f9c11e457ea708e011beb"

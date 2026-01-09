@@ -5,13 +5,14 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "video_ready",
+        "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -672,
-        -160
+        -1248,
+        -576
       ],
       "id": "4bad7a8c-fa89-4861-82b7-bbbf9e85cf66",
       "name": "Webhook",
@@ -19,87 +20,81 @@
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "2446f844-ef3d-4299-80bd-33d18162391d",
-              "name": "job_id",
-              "value": "={{ $json.body.job_id }}",
-              "type": "string"
-            },
-            {
-              "id": "8ae6c0a4-7053-4268-8c9d-4f3fbc55276b",
-              "name": "video_path",
-              "value": "={{ $json.body.video_path }}",
-              "type": "string"
-            },
-            {
-              "id": "f2942913-0992-4681-9890-4b74c563c8d9",
-              "name": "metadata_path",
-              "value": "={{ $json.body.metadata_path }}",
-              "type": "string"
-            }
-          ]
-        },
+        "respondWith": "json",
+        "responseBody": "{\n  \"ok\": true,\n  \"message\": \"Job accepted\",\n  \"jobId\": \"={{$execution.id}}\"\n}",
         "options": {}
       },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
       "position": [
-        -448,
-        -160
+        -1024,
+        -576
       ],
-      "id": "89a5e1cc-5721-45c6-9688-4c5fc4049c15",
-      "name": "Webhook Payload"
+      "id": "78b3c706-6007-4ae7-a357-9ad667360dfc",
+      "name": "Respond to Webhook"
     },
     {
       "parameters": {
-        "fileSelector": "={{ $json.metadata_path }}",
+        "triggerOn": "folder",
+        "path": "C:\\Users\\Thomas M\\Desktop\\InstagramContent\\HorrorVideos",
+        "events": [
+          "add"
+        ],
         "options": {
-          "fileExtension": ".txt",
-          "dataPropertyName": "metadata"
+          "awaitWriteFinish": true,
+          "ignored": "*.part.mp4"
         }
       },
-      "type": "n8n-nodes-base.readWriteFile",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.localFileTrigger",
+      "typeVersion": 1,
       "position": [
-        -224,
-        -160
+        -1248,
+        -432
       ],
-      "id": "70cabc69-e0fb-44c5-b155-0ddb24c56523",
-      "name": "Metadata file"
+      "id": "904e310d-228d-4b2f-a87b-fe99b8f06da7",
+      "name": "Local File Trigger"
     },
     {
       "parameters": {
-        "operation": "fromJson",
-        "binaryPropertyName": "metadata",
-        "destinationKey": "metadata",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.extractFromFile",
-      "typeVersion": 1.1,
-      "position": [
-        -32,
-        -160
-      ],
-      "id": "8a424fb4-4e15-47ac-a47b-b8a2d4da16c4",
-      "name": "Extract from Metadata"
-    },
-    {
-      "parameters": {
-        "fileSelector": "={{ $('Webhook Payload').item.json.video_path }}",
-        "options": {
-          "dataPropertyName": "Horrorvideo"
+        "resource": "video",
+        "operation": "update",
+        "videoId": "={{ $json.id }}",
+        "title": "={{ $json.snippet.title }}",
+        "regionCode": "US",
+        "categoryId": "={{ $json.snippet.categoryId }}",
+        "updateFields": {
+          "description": "={{ $json.snippet.description + '\\n' + $json.snippet.tags + \"\\n\\nMusic Credit - \\nComposer: Toby Fox\\nCCA: Materia Music Publishing\\nVideo: https://www.youtube.com/watch?v=jNrJT6lL9J4\\n\\nBackground Video Credit: https://www.youtube.com/watch?v=Lt-k-1eD5bE&t=33s\" }}",
+          "privacyStatus": "public",
+          "tags": "shorts,ytshorts,horrorstories,scary,horrorshorts,creepystories,watchtilltheend,disturbing,paranormal,dontwatchalone"
         }
       },
-      "type": "n8n-nodes-base.readWriteFile",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
       "position": [
-        240,
-        -368
+        288,
+        -320
       ],
-      "id": "a2937765-24e4-4ba5-98ff-5f4c9b36a04e",
-      "name": "Read Video from Disk"
+      "id": "9515c711-9d96-4dbb-a2a1-0f6120bbfcc7",
+      "name": "Update a video",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "HrbtSRDdv1Y1m8Jr",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  const b = item.binary?.Horrorvideo;\n\n  if (!b) {\n    throw new Error('FinalVideo binary missing');\n  }\n\n  // Force-correct the binary metadata\n  item.binary = {\n    Horrorvideo: {\n      ...b,\n      mimeType: 'video/mp4',\n      fileType: 'video/mp4',\n      fileExtension: 'mp4',\n    }\n  };\n\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        -320
+      ],
+      "id": "6e4cc048-c7b3-4366-a780-a6f0bed68e36",
+      "name": "Code in JavaScript2"
     },
     {
       "parameters": {
@@ -112,24 +107,46 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        560,
-        -176
+        -352,
+        -320
       ],
-      "id": "a25e0c80-4597-4097-bc2f-d0827a6c1578",
-      "name": "Merge"
+      "id": "404536a9-9f5c-474d-a31b-93bb97214e23",
+      "name": "Merge1"
     },
     {
       "parameters": {
-        "jsCode": "return $input.all().map(item => {\n  item.json.ytBody = {\n    snippet: {\n      title: (item.json.metadata?.title) + ': ' + (item.json.metadata?.hook) + \" #shorts\",\n      description: item.json.metadata?.caption_youtube + \"\\n\\n#shorts\",\n      tags: [\n        \"#shorts\",\"#ytshorts\",\"#horrorstories\",\"#scary\",\"#horrorshorts\",\n        \"#creepystories\",\"#watchtilltheend\",\"#disturbing\",\"#paranormal\",\"#dontwatchalone\"\n      ],\n      categoryId: 24\n    },\n    status: {\n      privacyStatus: \"private\",\n      selfDeclaredMadeForKids: false\n    }\n  };\n  return item;\n});\n"
+        "method": "PUT",
+        "url": "={{ $json.headers.location }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "video/mp4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "Horrorvideo",
+        "options": {}
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
       "position": [
-        768,
-        -176
+        80,
+        -320
       ],
-      "id": "6e65fac2-7df1-42d6-80aa-fba5e6010c97",
-      "name": "Code in JavaScript1"
+      "id": "55e1650b-839a-436d-a6c3-e26b7b7eba08",
+      "name": "HTTP Request PUT",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "HrbtSRDdv1Y1m8Jr",
+          "name": "YouTube account"
+        }
+      }
     },
     {
       "parameters": {
@@ -180,8 +197,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        976,
-        -320
+        -576,
+        -400
       ],
       "id": "1fbc6b15-e086-4354-add7-95c711762483",
       "name": "HTTP Request POST",
@@ -191,6 +208,323 @@
           "name": "YouTube account"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  item.json.ytBody = {\n    snippet: {\n      title: (item.json.metadata?.title) + ': ' + (item.json.metadata?.hook) + \" #shorts\",\n      description: item.json.metadata?.caption_youtube + \"\\n\\n#shorts\",\n      tags: [\n        \"#shorts\",\"#ytshorts\",\"#horrorstories\",\"#scary\",\"#horrorshorts\",\n        \"#creepystories\",\"#watchtilltheend\",\"#disturbing\",\"#paranormal\",\"#dontwatchalone\"\n      ],\n      categoryId: 24\n    },\n    status: {\n      privacyStatus: \"private\",\n      selfDeclaredMadeForKids: false\n    }\n  };\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -784,
+        -304
+      ],
+      "id": "6e65fac2-7df1-42d6-80aa-fba5e6010c97",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "includeUnpaired": true
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        272,
+        -608
+      ],
+      "id": "a25e0c80-4597-4097-bc2f-d0827a6c1578",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Webhook Payload').item.json.video_path }}",
+        "options": {
+          "dataPropertyName": "Horrorvideo"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        32,
+        -736
+      ],
+      "id": "a2937765-24e4-4ba5-98ff-5f4c9b36a04e",
+      "name": "Read Video from Disk"
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "binaryPropertyName": "metadata",
+        "destinationKey": "metadata",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -224,
+        -592
+      ],
+      "id": "8a424fb4-4e15-47ac-a47b-b8a2d4da16c4",
+      "name": "Extract from Metadata"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $json.metadata_path }}",
+        "options": {
+          "fileExtension": ".txt",
+          "dataPropertyName": "metadata"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -432,
+        -592
+      ],
+      "id": "70cabc69-e0fb-44c5-b155-0ddb24c56523",
+      "name": "Metadata file"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2446f844-ef3d-4299-80bd-33d18162391d",
+              "name": "job_id",
+              "value": "={{ $json.body.job_id }}",
+              "type": "string"
+            },
+            {
+              "id": "8ae6c0a4-7053-4268-8c9d-4f3fbc55276b",
+              "name": "video_path",
+              "value": "={{ $json.body.video_path }}",
+              "type": "string"
+            },
+            {
+              "id": "f2942913-0992-4681-9890-4b74c563c8d9",
+              "name": "metadata_path",
+              "value": "={{ $json.body.metadata_path }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -624,
+        -592
+      ],
+      "id": "89a5e1cc-5721-45c6-9688-4c5fc4049c15",
+      "name": "Webhook Payload"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "27034760-25af-48d4-a781-d417cf364624",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "b87a24c9-21e1-4583-ae32-03f3e846045e",
+              "name": "hook",
+              "value": "={{ $json.hook }}",
+              "type": "string"
+            },
+            {
+              "id": "073e52e4-42e0-4c9b-921c-2a94abd2d918",
+              "name": "caption_instagram",
+              "value": "={{ $json.caption_instagram }}",
+              "type": "string"
+            },
+            {
+              "id": "e62bdcf9-92c6-4b78-baa6-27b9ef1892f0",
+              "name": "caption_tiktok",
+              "value": "={{ $json.caption_tiktok }}",
+              "type": "string"
+            },
+            {
+              "id": "be747fb8-0621-4cfd-a470-611079378c98",
+              "name": "caption_youtube",
+              "value": "={{ $json.caption_youtube }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -96,
+        336
+      ],
+      "id": "10df07b7-2ca8-489e-8041-3c1632ea0a16",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  item.json.ytBody = {\n    snippet: {\n      title: (item.json.metadata?.title) + ': ' + (item.json.metadata?.hook) + \" #shorts\",\n      description: item.json.metadata?.caption_youtube + \"\\n\\n#shorts\",\n      tags: [\n        \"#shorts\",\"#ytshorts\",\"#horrorstories\",\"#scary\",\"#horrorshorts\",\n        \"#creepystories\",\"#watchtilltheend\",\"#disturbing\",\"#paranormal\",\"#dontwatchalone\"\n      ],\n      categoryId: 24\n    },\n    status: {\n      privacyStatus: \"private\",\n      selfDeclaredMadeForKids: false\n    }\n  };\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        240
+      ],
+      "id": "188f7184-de84-4f03-a174-081f66a75442",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ 'C:/Users/Thomas M/Desktop/InstagramContent/Metadata/' +  $json.storyFileName + '_metadata.json' }}",
+        "options": {
+          "dataPropertyName": "metadata"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -768,
+        240
+      ],
+      "id": "562553b1-dd23-4f63-ada0-52e793e73c3f",
+      "name": "Read/Write Files from Disk1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  if (typeof item.json.metadata !== \"string\") {\n    throw new Error(\"Expected item.json.metadata to be a JSON string\");\n  }\n\n  let parsed;\n  try {\n    parsed = JSON.parse(item.json.metadata);\n  } catch (e) {\n    throw new Error(\n      `Failed to parse metadata JSON string: ${e.message}\\n` +\n      `Value: ${item.json.metadata.slice(0, 300)}`\n    );\n  }\n\n  // Flatten fields so Set node can use them easily\n  return {\n    json: {\n      title: parsed.title ?? \"\",\n      hook: parsed.hook ?? \"\",\n      caption_instagram: parsed.caption_instagram ?? \"\",\n      caption_tiktok: parsed.caption_tiktok ?? \"\",\n      caption_youtube: parsed.caption_youtube ?? \"\",\n      fileBase: parsed.path ?? \"\"\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        240
+      ],
+      "id": "9942382c-d1c1-4d69-ba18-3fec2c3ec3e1",
+      "name": "Code in JavaScript5"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "metadata",
+        "destinationKey": "metadata",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -544,
+        240
+      ],
+      "id": "c63580a9-8d5a-411d-abc6-b38b11472365",
+      "name": "Extract from File1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "includeUnpaired": true
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        128,
+        240
+      ],
+      "id": "69702786-22d4-4b6b-b1ac-efe43ce7b752",
+      "name": "Merge3"
+    },
+    {
+      "parameters": {
+        "fileSelector": "C:\\Users\\Thomas M\\Desktop\\InstagramContent\\HorrorStories\\counter.txt",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -1664,
+        240
+      ],
+      "id": "6fb967a8-e10b-4e40-8182-79bd7e6ac968",
+      "name": "readCounter.txt1"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "destinationKey": "counterValue",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -1440,
+        240
+      ],
+      "id": "6ea44982-04be-49b9-8df4-fb3122805b1e",
+      "name": "Extract from File(Counter)1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0762f82b-5765-4346-a730-39baf9dfe10a",
+              "name": "storyNum",
+              "value": "={{ parseInt($json.counterValue) }}",
+              "type": "string"
+            },
+            {
+              "id": "ea5eb994-c0d7-4fbe-8e43-b8cdbada2471",
+              "name": "dateStr",
+              "value": "={{ $now.toFormat('yyyy-LL-dd') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1216,
+        240
+      ],
+      "id": "506f8d36-13e1-47d7-8554-55054666adb4",
+      "name": "Compute Primitives1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7933de3f-6ec9-4d79-8dce-14ffe988c305",
+              "name": "storyFileName",
+              "value": "={{ 'HorrorStory' + $json.storyNum + '_' + $json.dateStr }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -992,
+        240
+      ],
+      "id": "04f1b463-0603-4a4d-b47e-f7a892494414",
+      "name": "Build Dependent Fields1"
     },
     {
       "parameters": {
@@ -215,11 +549,11 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1616,
-        -192
+        1248,
+        224
       ],
-      "id": "55e1650b-839a-436d-a6c3-e26b7b7eba08",
-      "name": "HTTP Request PUT",
+      "id": "8592a6dc-37ee-4115-a522-d98c9baf537d",
+      "name": "HTTP Request PUT1",
       "credentials": {
         "youTubeOAuth2Api": {
           "id": "HrbtSRDdv1Y1m8Jr",
@@ -238,11 +572,11 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        1200,
-        -192
+        800,
+        224
       ],
-      "id": "404536a9-9f5c-474d-a31b-93bb97214e23",
-      "name": "Merge1"
+      "id": "2b27f479-3d23-4c31-bcbc-e085db77fcc9",
+      "name": "Merge2"
     },
     {
       "parameters": {
@@ -251,136 +585,191 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1408,
-        -192
+        1024,
+        224
       ],
-      "id": "6e4cc048-c7b3-4366-a780-a6f0bed68e36",
-      "name": "Code in JavaScript2"
+      "id": "d1fce08b-0c83-4ce7-bfde-f4c6e48f83ec",
+      "name": "Code in JavaScript4"
     },
     {
       "parameters": {
         "resource": "video",
         "operation": "update",
         "videoId": "={{ $json.id }}",
-        "title": "={{ $json.snippet.title }}",
+        "title": "={{ $('Edit Fields1').item.json.title + \": \" + $('Edit Fields1').item.json.hook }}",
         "regionCode": "US",
         "categoryId": "={{ $json.snippet.categoryId }}",
         "updateFields": {
-          "description": "={{ $json.snippet.description + '\\n' + $json.snippet.tags }}",
+          "description": "={{ $('Edit Fields1').item.json.caption_youtube + '\\n' + $json.snippet.tags + \"\\n\\nMusic Credit - \\nComposer: Toby Fox\\nCCA: Materia Music Publishing\\nVideo: https://www.youtube.com/watch?v=jNrJT6lL9J4\\n\\nBackground Video Credit: https://www.youtube.com/watch?v=Lt-k-1eD5bE&t=33s\" }}",
           "privacyStatus": "public",
-          "tags": "shorts,ytshorts,horrorstories,scary,horrorshorts,creepystories,watchtilltheend,disturbing,paranormal,dontwatchalone"
+          "tags": "creepystories,disturbing,dontwatchalone,horrorshorts,horrorstories,paranormal,scary,shorts,watchtilltheend,ytshorts"
         }
       },
       "type": "n8n-nodes-base.youTube",
       "typeVersion": 1,
       "position": [
-        1824,
-        -192
+        1472,
+        224
       ],
-      "id": "9515c711-9d96-4dbb-a2a1-0f6120bbfcc7",
-      "name": "Update a video",
+      "id": "264ea35d-3017-41b9-8b11-939145005e4c",
+      "name": "Update a video1",
       "credentials": {
         "youTubeOAuth2Api": {
           "id": "HrbtSRDdv1Y1m8Jr",
           "name": "YouTube account"
         }
       }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Upload-Content-Type",
+              "value": "video/mp4"
+            },
+            {
+              "name": "X-Upload-Content-Length",
+              "value": "={{ $json.fileSize }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=UTF-8"
+            },
+            {}
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "snippet",
+              "value": "={{ $json.ytBody.snippet }}"
+            },
+            {
+              "name": "status",
+              "value": "={{ $json.ytBody.status }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        576,
+        144
+      ],
+      "id": "a979fb75-77fb-47b6-9551-9bbe66ec8dc4",
+      "name": "HTTP Request POST1",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "HrbtSRDdv1Y1m8Jr",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ 'C:/Users/Thomas M/Desktop/InstagramContent/HorrorVideos/' +  $('Build Dependent Fields1').item.json.storyFileName + '.mp4' }}",
+        "options": {
+          "dataPropertyName": "Horrorvideo"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -96,
+        144
+      ],
+      "id": "41eb40e6-c0bb-4e1b-b879-07f7bbf8fc97",
+      "name": "Read Video from Disk1"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "f807a51a-7685-4be5-a272-6007bb25fa49",
+      "typeVersion": 1.1,
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -1872,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "slimey.ninja2024@gmail.com",
+        "subject": "Completed video",
+        "message": "={{ 'Uploaded new video: https://www.youtube.com/shorts/' + $json.id + '\\nTitle: ' + $json.snippet.title }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1680,
+        224
+      ],
+      "id": "73b0e850-edc1-4723-8967-9d103c06e0e5",
+      "name": "Send a message",
+      "webhookId": "0991ac17-cada-4617-ae77-50d0373f245d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "S0wDGIZfHsSLdOKF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "Use below as subworkflow",
+        "height": 80
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        16
+      ],
+      "id": "57ab987b-db48-41c1-a3c4-40a53f71f3d6",
+      "name": "Sticky Note"
     }
   ],
   "pinData": {},
   "connections": {
     "Webhook": {
       "main": [
-        [
-          {
-            "node": "Webhook Payload",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
-    "Webhook Payload": {
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Local File Trigger": {
+      "main": [
+        []
+      ]
+    },
+    "Code in JavaScript2": {
       "main": [
         [
           {
-            "node": "Metadata file",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Metadata file": {
-      "main": [
-        [
-          {
-            "node": "Extract from Metadata",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract from Metadata": {
-      "main": [
-        [
-          {
-            "node": "Read Video from Disk",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Read Video from Disk": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge": {
-      "main": [
-        [
-          {
-            "node": "Code in JavaScript1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Code in JavaScript1": {
-      "main": [
-        [
-          {
-            "node": "HTTP Request POST",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Merge1",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "HTTP Request POST": {
-      "main": [
-        [
-          {
-            "node": "Merge1",
+            "node": "HTTP Request PUT",
             "type": "main",
             "index": 0
           }
@@ -398,22 +787,295 @@
         ]
       ]
     },
-    "Code in JavaScript2": {
+    "HTTP Request PUT": {
       "main": [
         [
           {
-            "node": "HTTP Request PUT",
+            "node": "Update a video",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "HTTP Request PUT": {
+    "HTTP Request POST": {
       "main": [
         [
           {
-            "node": "Update a video",
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "HTTP Request POST",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Video from Disk": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from Metadata": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Read Video from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Metadata file": {
+      "main": [
+        [
+          {
+            "node": "Extract from Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Payload": {
+      "main": [
+        [
+          {
+            "node": "Metadata file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request POST1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk1": {
+      "main": [
+        [
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript5": {
+      "main": [
+        [
+          {
+            "node": "Read Video from Disk1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "readCounter.txt1": {
+      "main": [
+        [
+          {
+            "node": "Extract from File(Counter)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File(Counter)1": {
+      "main": [
+        [
+          {
+            "node": "Compute Primitives1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Primitives1": {
+      "main": [
+        [
+          {
+            "node": "Build Dependent Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Dependent Fields1": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request PUT1": {
+      "main": [
+        [
+          {
+            "node": "Update a video1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request PUT1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a video1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request POST1": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Video from Disk1": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "readCounter.txt1",
             "type": "main",
             "index": 0
           }
@@ -426,7 +1088,7 @@
     "executionOrder": "v1",
     "availableInMCP": false
   },
-  "versionId": "f53744ef-17a7-4ad5-864e-8bbfff9ba957",
+  "versionId": "7d8cd401-864a-4883-ab02-89dbf9fe91d7",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "99760253acafc950b45bca9d40f879d0c42df29fd78f9c11e457ea708e011beb"
