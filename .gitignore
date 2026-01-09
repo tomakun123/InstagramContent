@@ -28,8 +28,6 @@ noteToSelf
 *.m4a
 HorrorStory*.txt
 *_metadata.json
-*.html
-privacy.html
 
 # --------------------
 # Python cache / compiled files
