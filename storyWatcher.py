@@ -7,22 +7,30 @@ import subprocess
 # CHANGE THIS to your actual folder
 WATCH_DIR = Path(r"C:\Users\Thomas M\Desktop\InstagramContent\Metadata")
 
+def to_str_path(p) -> str:
+    # watchdog may provide str, bytes, or other buffer types depending on platform/stubs
+    if isinstance(p, str):
+        return p
+    if isinstance(p, (bytes, bytearray, memoryview)):
+        b = bytes(p)  # converts bytearray/memoryview -> bytes
+        return b.decode("mbcs", errors="ignore")  # Windows filesystem encoding
+    return str(p)  # last resort
+
 class StoryHandler(FileSystemEventHandler):
     def on_created(self, event):
         if event.is_directory:
             return
 
-        path = Path(event.src_path)
+        src = to_str_path(event.src_path)
+        path = Path(src)
 
         # Only react to .txt files
-        if path.suffix.lower() == ".txt":
-            print("hello")
+        if path.suffix.lower() != ".txt":
+            return
 
-        # RUNS TEXT TO SPEECH SCRIPT
-        subprocess.run(
-            ["python", "generateContent.py", str(path)],
-            check=True
-        )
+        print("hello")
+        subprocess.run(["python", "generateContent.py", str(path)], check=True)
+
 
 if __name__ == "__main__":
     print("Watching folder:", WATCH_DIR)
