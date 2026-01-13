@@ -1,1 +1,0 @@
-This is a locking mechanism so 2 n8n executions can't run at the same time
