@@ -6,11 +6,17 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 
-########### Allows file to save in specific directory ######################################
+
+load_dotenv()  # loads .env into environment variables
+
+# textToSpeech_edge.py
+import sys
 from pathlib import Path
 from datetime import datetime
+import asyncio
+import edge_tts
 
-# -------- CONFIG --------
+# -------- CONFIG (MATCHES OLD SCRIPT) --------
 OUTPUT_DIR = Path("HorrorAudio")
 COUNTER_FILE = Path("HorrorStories/counter.txt")
 
@@ -19,79 +25,51 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Read counter
 if COUNTER_FILE.exists():
-    story_number = (int(COUNTER_FILE.read_text().strip()))
+    story_number = int(COUNTER_FILE.read_text().strip())
 
 # Get today's date
 date_str = datetime.now().strftime("%Y-%m-%d")
 
-# Build filename
+# Build filename (IDENTICAL FORMAT)
 output_filename = f"HorrorAudioOutput{story_number}_{date_str}.mp3"
 output_path = OUTPUT_DIR / output_filename
 
-########################################################################
+# -------- VOICE CONTROLS (YOUR GOAT PRESET) --------
+VOICE  = "en-US-ChristopherNeural"
+RATE   = "+45%"     # Speed
+PITCH  = "-27Hz"    # Depth
+VOLUME = "+50%"     # Presence
 
-load_dotenv()  # loads .env into environment variables
+# -------- LOAD TEXT (AUTO FROM COUNTER + DATE) --------
 
-URL = "https://developer.voicemaker.in/voice/api"
-API_KEY = os.getenv("VOICEMAKER_API_KEY")
+# Build expected input filename
+input_filename = f"HorrorStory{story_number}_{date_str}.txt"
+input_path = Path("HorrorStories") / input_filename
 
-if not API_KEY:
-    raise RuntimeError("VOICEMAKER_API_KEY is missing from .env")
+if not input_path.exists():
+    print(f"❌ Input text file not found: {input_path}")
+    sys.exit(1)
 
-headers = {
-    "Authorization": f"Bearer {API_KEY}",
-    "Content-Type": "application/json"
-}
+text = input_path.read_text(encoding="utf-8")
 
-file_path = Path(f"HorrorStories/HorrorStory{story_number}_{date_str}.txt")
-text = file_path.read_text(encoding="utf-8")
-print("Loaded: ", file_path)
+print("Loaded text from:", input_path)
+print("Saving audio to:", output_path)
+print(f"Voice={VOICE} Rate={RATE} Pitch={PITCH} Volume={VOLUME}")
 
-data = {
-    "Engine": "neural",
-    "VoiceId": "proplus-Matthew",
-    "LanguageCode": "en-US",
-    "Text": text,
-    "OutputFormat": "mp3",
-    "SampleRate": "48000",
-    "Effect": "default",
-    "MasterVolume": "0",
-    "MasterSpeed": "20",
-    "MasterPitch": "-20",
-    "Stability" : "75"
-}
+# -------- TTS --------
+async def main():
+    tts = edge_tts.Communicate(
+        text=text,
+        voice=VOICE,
+        rate=RATE,
+        pitch=PITCH,
+        volume=VOLUME,
+    )
+    await tts.save(str(output_path))
 
-response = requests.post(URL, headers=headers, json=data)
+asyncio.run(main())
 
-print(f"Saving audio to: {output_path}")
-
-if response.status_code == 200:
-    result = response.json()
-    if result.get("success"):
-        audio_url = result.get("path")
-        audio_response = requests.get(audio_url, stream=True)
-
-        total_size = int(audio_response.headers.get('content-length', 0))
-        block_size = 1024  # 1 Kibibyte
-
-        with open(output_path, "wb") as file, tqdm(
-            desc="Downloading",
-            total=total_size,
-            unit='iB',
-            unit_scale=True,
-            unit_divisor=1024,
-        ) as bar:
-            for chunk in audio_response.iter_content(block_size):
-                if chunk:
-                    file.write(chunk)
-                    bar.update(len(chunk))
-
-        print(f"✅ Audio file saved as {output_path}")
-    else:
-        print("❌ Error in conversion:", result.get("message"))
-else:
-    print(f"❌ Request failed with status code {response.status_code}")
-    print(response.text)
+print(f"✅ Audio file saved as {output_path}")
 
 
 ######################## addMusicFFMPEG.py ###########################
