@@ -26,7 +26,7 @@ output_path = OUTPUT_DIR / output_filename
 # -------- VOICE CONTROLS (YOUR GOAT PRESET) --------
 VOICE  = "en-US-ChristopherNeural"
 RATE   = "+45%"     # Speed
-PITCH  = "-27Hz"    # Depth
+PITCH  = "-10Hz"    # Depth
 VOLUME = "+50%"     # Presence
 
 # -------- LOAD TEXT (AUTO FROM COUNTER + DATE) --------

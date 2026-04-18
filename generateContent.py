@@ -28,21 +28,21 @@ if COUNTER_FILE.exists():
     story_number = int(COUNTER_FILE.read_text().strip())
 
 # Get today's date
-date_str = datetime.now().strftime("%Y-%m-%d")
+# date_str = datetime.now().strftime("%Y-%m-%d")
 
 # Build filename (IDENTICAL FORMAT)
-output_filename = f"HorrorAudioOutput{story_number}_{date_str}.mp3"
+output_filename = f"HorrorAudioOutput{story_number}.mp3"
 output_path = OUTPUT_DIR / output_filename
 
 # -------- VOICE CONTROLS (YOUR GOAT PRESET) --------
 VOICE  = "en-US-ChristopherNeural"
 RATE   = "+40%"     # Speed
-PITCH  = "-29Hz"    # Depth
+PITCH  = "-10Hz"    # Depth
 VOLUME = "+50%"     # Presence
 # -------- LOAD TEXT (AUTO FROM COUNTER + DATE) --------
 
 # Build expected input filename
-input_filename = f"HorrorStory{story_number}_{date_str}.txt"
+input_filename = f"HorrorStory{story_number}.txt"
 input_path = Path("HorrorStories") / input_filename
 
 if not input_path.exists():
@@ -92,17 +92,17 @@ if COUNTER_FILE.exists():
     story_number = (int(COUNTER_FILE.read_text().strip()))
 
 # Get today's date
-date_str = datetime.now().strftime("%Y-%m-%d")
+# date_str = datetime.now().strftime("%Y-%m-%d")
 
 # Build filename
-output_filename = f"HorrorAudioMusicOutput{story_number}_{date_str}.mp3"
+output_filename = f"HorrorAudioMusicOutput{story_number}.mp3"
 output_path = OUTPUT_DIR / output_filename
 
 print(f"Saving audio to: {output_path}")
 
 ########################################################################
 
-voice = Path(f"HorrorAudio/HorrorAudioOutput{story_number}_{date_str}.mp3")
+voice = Path(f"HorrorAudio/HorrorAudioOutput{story_number}.mp3")
 music = Path("HorrorAudio/musicOutput.mp3")
 out = Path(output_path)
 
@@ -154,10 +154,10 @@ else:
     raise FileNotFoundError(f"Missing counter file: {COUNTER_FILE}")
 
 # Get today's date
-date_str = datetime.now().strftime("%Y-%m-%d")
+# date_str = datetime.now().strftime("%Y-%m-%d")
 
 # Build filename
-output_filename = f"HorrorStory{story_number}_{date_str}.mp4"
+output_filename = f"HorrorStory{story_number}.mp4"
 output_path = OUTPUT_DIR / output_filename
 
 # ✅ temp file still ends with .mp4 so ffmpeg knows the container
@@ -206,7 +206,7 @@ video_clip = VideoFileClip("HorrorVideos/MCParkour.mp4").without_audio()
 print("Clip duration: {}".format(video_clip.duration))
 print("Clip fps: {}".format(video_clip.fps))
 
-audio_src = f"HorrorAudio/HorrorAudioMusicOutput{story_number}_{date_str}.mp3"
+audio_src = f"HorrorAudio/HorrorAudioMusicOutput{story_number}.mp3"
 audio_clip = AudioFileClip(audio_src)
 
 # Select random segment of video (ensure we have enough video duration)

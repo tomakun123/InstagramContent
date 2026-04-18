@@ -1,7 +1,7 @@
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from pathlib import Path
-import time
+import time 
 import subprocess
 
 WATCH_DIR = Path(r"C:\Users\Thomas M\Desktop\InstagramContent\Metadata")
@@ -54,7 +54,7 @@ class StoryHandler(FileSystemEventHandler):
             print(f"[watchdog] File not ready: {path}")
             return
 
-        print(f"[watchdog] Running generateContent.py for: {path}")
+        print(f"[watchdog] Running generateContent.py for: ")
         subprocess.run(
             [PYTHON_EXE, "-3", "generateContent.py", str(path)],
             check=True
