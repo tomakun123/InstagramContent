@@ -1,0 +1,3 @@
+.\scripts\stop-pipeline.ps1
+
+.\scripts\start-pipeline.ps1 -Install
