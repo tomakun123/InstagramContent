@@ -1,11 +1,18 @@
-bs4
-pandas
-requests
-moviepy 
-tqdm
-numpy
-pydub
+# Story -> audio
+edge-tts
+python-dotenv
+
+# Transcription (word-level timings for subtitles)
 openai-whisper
 whisper-timestamped
-watchdog
 torch
+
+# Render
+moviepy
+numpy
+
+# Watcher
+watchdog
+
+# NOTE: ffmpeg must be installed separately and available on PATH.
+#       https://www.ffmpeg.org/download.html#build-windows

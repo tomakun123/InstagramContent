@@ -1,5 +1,5 @@
 {
-  "name": "NEWEST-WORKFLOW-SHOULD-WORK",
+  "name": "PublishingContent2.0",
   "nodes": [
     {
       "parameters": {
@@ -42,10 +42,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        352,
-        1184
+        -656,
+        32
       ],
-      "id": "48c387ac-7005-4511-a6df-ab1bdb6e3eeb",
+      "id": "54229783-808a-4012-8d3d-cc688c43836d",
       "name": "Edit Fields1"
     },
     {
@@ -55,15 +55,15 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        896,
-        1104
+        -112,
+        -48
       ],
-      "id": "154a51f1-bb42-4ea4-a52d-c350f43b59c8",
+      "id": "79bb3a11-56a9-4d9c-af8e-20958ec2b608",
       "name": "Code in JavaScript3"
     },
     {
       "parameters": {
-        "fileSelector": "={{ 'C:/Users/Thomas M/Desktop/InstagramContent/Metadata/' +  $json.storyFileName + '_metadata.json' }}",
+        "fileSelector": "={{ 'C:/Users/Thomas M/Desktop/InstagramContent/Metadata/' + $('storyFileName').item.json.storyFileName + '_metadata.json' }}",
         "options": {
           "dataPropertyName": "metadata"
         }
@@ -71,10 +71,10 @@
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1.1,
       "position": [
-        -496,
-        1104
+        -1504,
+        -48
       ],
-      "id": "f1693402-4a4f-47bf-9367-2750d28f8785",
+      "id": "dc3efa43-f017-4ff5-a6ab-040165c867d2",
       "name": "Read/Write Files from Disk1"
     },
     {
@@ -84,10 +84,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -48,
-        1104
+        -1056,
+        -48
       ],
-      "id": "8494dd84-6eac-43d6-9f6e-0f69cd75a9c3",
+      "id": "2f61fe9d-b72c-4e31-868a-2506ccfe4299",
       "name": "Code in JavaScript5"
     },
     {
@@ -100,10 +100,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        -272,
-        1104
+        -1280,
+        -48
       ],
-      "id": "e01c1591-5437-4800-98fe-f7e414524fc5",
+      "id": "32272d4e-dda0-4c3b-8825-ec1e32752588",
       "name": "Extract from File1"
     },
     {
@@ -117,10 +117,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        768,
-        1104
+        -240,
+        -48
       ],
-      "id": "d3133c95-0063-44ea-a27b-bcbcdc434f98",
+      "id": "5d9df53f-4996-4673-a31d-8038f1a2b68f",
       "name": "Merge3"
     },
     {
@@ -131,10 +131,10 @@
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1.1,
       "position": [
-        -1392,
-        1104
+        -2400,
+        64
       ],
-      "id": "3bf97f2d-4be0-4ab5-b9f3-daab92519cdd",
+      "id": "c8f0bd86-c10b-41db-8db6-03fb11c30458",
       "name": "readCounter.txt1"
     },
     {
@@ -146,63 +146,11 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        -1168,
-        1104
+        -2176,
+        64
       ],
-      "id": "3fc0af7f-d4e8-4ab8-92a0-c43c03c78842",
+      "id": "c7807e26-cc24-452f-abb0-33fb2d9aa2d7",
       "name": "Extract from File(Counter)1"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "0762f82b-5765-4346-a730-39baf9dfe10a",
-              "name": "storyNum",
-              "value": "={{ parseInt($json.counterValue) }}",
-              "type": "string"
-            },
-            {
-              "id": "ea5eb994-c0d7-4fbe-8e43-b8cdbada2471",
-              "name": "dateStr",
-              "value": "={{ $now.toFormat('yyyy-LL-dd') }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        -944,
-        1104
-      ],
-      "id": "71a328f6-cd51-4ddc-b164-9540c31f7ba0",
-      "name": "Compute Primitives1"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "7933de3f-6ec9-4d79-8dce-14ffe988c305",
-              "name": "storyFileName",
-              "value": "={{ 'HorrorStory' + $json.storyNum + '_' + $json.dateStr }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        -720,
-        1104
-      ],
-      "id": "6ce542cf-5f0b-4c33-86e7-14e5e50d2f00",
-      "name": "Build Dependent Fields1"
     },
     {
       "parameters": {
@@ -227,10 +175,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1728,
-        1088
+        720,
+        -64
       ],
-      "id": "1c8f2984-9ace-44bd-804f-08290486802b",
+      "id": "d6fb1eb7-e203-4208-8ccf-a977c6bd5e8a",
       "name": "HTTP Request PUT1",
       "credentials": {
         "youTubeOAuth2Api": {
@@ -250,10 +198,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        1280,
-        1088
+        272,
+        -64
       ],
-      "id": "733d9390-49ae-4946-98e3-028f18472303",
+      "id": "50b5004f-fee6-4fe8-bd98-fc2c7f374efa",
       "name": "Merge2"
     },
     {
@@ -263,10 +211,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1504,
-        1088
+        496,
+        -64
       ],
-      "id": "01ba1a2d-127f-494f-b92c-6f262eafe84b",
+      "id": "847011e3-5c54-4b27-a710-8eb9672db75e",
       "name": "Code in JavaScript4"
     },
     {
@@ -318,10 +266,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1088,
-        1008
+        64,
+        -144
       ],
-      "id": "f6afe897-3242-4408-be86-984511710e97",
+      "id": "222d75f6-f1d8-4c32-9cd8-a3b31764bbe4",
       "name": "HTTP Request POST1",
       "credentials": {
         "youTubeOAuth2Api": {
@@ -332,7 +280,7 @@
     },
     {
       "parameters": {
-        "fileSelector": "={{ 'C:/Users/Thomas M/Desktop/InstagramContent/HorrorVideos/' + $('Build Dependent Fields1').item.json.storyFileName + '.mp4' }}",
+        "fileSelector": "={{ 'C:/Users/Thomas M/Desktop/InstagramContent/HorrorVideos/' + $('storyFileName').item.json.storyFileName + '.mp4' }}",
         "options": {
           "dataPropertyName": "Horrorvideo"
         }
@@ -340,23 +288,23 @@
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1.1,
       "position": [
-        448,
-        992
+        -560,
+        -160
       ],
-      "id": "86516db2-eaa1-4e3c-8494-3328935da2bc",
+      "id": "e83ec4f6-af86-4d16-9efa-59c48ec979bd",
       "name": "Read Video from Disk1"
     },
     {
       "parameters": {
         "inputSource": "passthrough"
       },
-      "id": "2725a773-0c3a-4fb2-8138-b84d943d91db",
+      "id": "78bba1d6-1c79-467b-a67a-929ff0d3f9d2",
       "typeVersion": 1.1,
       "name": "Start",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "position": [
-        -1648,
-        1104
+        -2656,
+        64
       ]
     },
     {
@@ -369,10 +317,10 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        2224,
-        1088
+        1136,
+        -64
       ],
-      "id": "a4658ad1-8e75-4d23-9b5a-708dff5499df",
+      "id": "952c71ee-b27e-43a5-b6a3-a7a45afd1cd4",
       "name": "Send a message",
       "webhookId": "0991ac17-cada-4617-ae77-50d0373f245d",
       "credentials": {
@@ -381,19 +329,6 @@
           "name": "Gmail account"
         }
       }
-    },
-    {
-      "parameters": {
-        "resource": "image"
-      },
-      "type": "@mookielianhd/n8n-nodes-instagram.instagram",
-      "typeVersion": 1,
-      "position": [
-        -32,
-        448
-      ],
-      "id": "aa83e12a-13fe-476a-813c-d176d9f09e64",
-      "name": "Publish"
     },
     {
       "parameters": {
@@ -412,10 +347,10 @@
       "type": "n8n-nodes-base.youTube",
       "typeVersion": 1,
       "position": [
-        1952,
-        1088
+        944,
+        -64
       ],
-      "id": "58a9eb1e-1cc4-4a8d-bdec-a9f96d24edaf",
+      "id": "a14cde61-7669-4c69-87ad-55df083ca018",
       "name": "Update a video",
       "credentials": {
         "youTubeOAuth2Api": {
@@ -426,36 +361,63 @@
     },
     {
       "parameters": {
-        "additionalFields": {}
-      },
-      "type": "@igabm/n8n-nodes-tiktok.tiktok",
-      "typeVersion": 2,
-      "position": [
-        144,
-        1408
-      ],
-      "id": "e0bfdfae-cd08-4218-b26b-72e30fb81fad",
-      "name": "Upload video",
-      "credentials": {
-        "tiktokOAuth2Api": {
-          "id": "c17fBcVnHJNCrOhY",
-          "name": "TikTok account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "command": "powershell -Command \"Remove-Item 'C:\\Users\\Thomas M\\Desktop\\InstagramContent\\HorrorStories\\generate_lock.lock' -ErrorAction SilentlyContinue\"\n"
       },
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        256,
-        992
+        -752,
+        -160
       ],
-      "id": "490c54e5-909f-4ef6-a0a4-83b9ef888d5b",
+      "id": "84dd8b28-130a-4321-92b1-0cc3d951e7d7",
       "name": "Execute Command",
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0762f82b-5765-4346-a730-39baf9dfe10a",
+              "name": "storyNum",
+              "value": "={{ parseInt($json.counterValue) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1952,
+        64
+      ],
+      "id": "4b45e6f4-dc13-49a9-9e30-807c8a3bd731",
+      "name": "storyNum"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7933de3f-6ec9-4d79-8dce-14ffe988c305",
+              "name": "storyFileName",
+              "value": "={{ 'HorrorStory' + $('storyNum').item.json.storyNum }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1728,
+        -48
+      ],
+      "id": "f7cd2699-b7c4-4bf4-9df9-72c5ba2c5df5",
+      "name": "storyFileName"
     }
   ],
   "pinData": {
@@ -466,25 +428,22 @@
           "fileName": "HorrorStory15_2026-01-12.part.mp4",
           "fileExtension": "mp4",
           "fileSize": "20.4 MB"
-        },
-        "binary": {
-          "data": {
-            "mimeType": "application/mp4",
-            "fileExtension": "mp4",
-            "data": "filesystem-v2",
-            "directory": "C:/Users/Thomas M/Desktop/InstagramContent/HorrorVideos",
-            "fileName": "HorrorStory15_2026-01-12.part.mp4",
-            "id": "filesystem-v2:workflows/NmdnraHll2xvvPGC/executions/600/binary_data/60e51303-861e-48e3-a553-273190080001",
-            "fileSize": "20.4 MB"
-          }
-        },
-        "pairedItem": {
-          "item": 0
         }
       }
     ]
   },
   "connections": {
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
     "Code in JavaScript3": {
       "main": [
         [
@@ -497,6 +456,77 @@
             "node": "Merge2",
             "type": "main",
             "index": 1
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk1": {
+      "main": [
+        [
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript5": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "readCounter.txt1": {
+      "main": [
+        [
+          {
+            "node": "Extract from File(Counter)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File(Counter)1": {
+      "main": [
+        [
+          {
+            "node": "storyNum",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -545,17 +575,6 @@
         ]
       ]
     },
-    "Merge3": {
-      "main": [
-        [
-          {
-            "node": "Code in JavaScript3",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Read Video from Disk1": {
       "main": [
         [
@@ -563,99 +582,6 @@
             "node": "Merge3",
             "type": "main",
             "index": 0
-          }
-        ]
-      ]
-    },
-    "Read/Write Files from Disk1": {
-      "main": [
-        [
-          {
-            "node": "Extract from File1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "readCounter.txt1": {
-      "main": [
-        [
-          {
-            "node": "Extract from File(Counter)1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract from File(Counter)1": {
-      "main": [
-        [
-          {
-            "node": "Compute Primitives1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Compute Primitives1": {
-      "main": [
-        [
-          {
-            "node": "Build Dependent Fields1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Build Dependent Fields1": {
-      "main": [
-        [
-          {
-            "node": "Read/Write Files from Disk1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Code in JavaScript5": {
-      "main": [
-        [
-          {
-            "node": "Edit Fields1",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Execute Command",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract from File1": {
-      "main": [
-        [
-          {
-            "node": "Code in JavaScript5",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Edit Fields1": {
-      "main": [
-        [
-          {
-            "node": "Merge3",
-            "type": "main",
-            "index": 1
           }
         ]
       ]
@@ -692,18 +618,41 @@
           }
         ]
       ]
+    },
+    "storyNum": {
+      "main": [
+        [
+          {
+            "node": "storyFileName",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "storyFileName": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "availableInMCP": false
+    "binaryMode": "separate",
+    "availableInMCP": true
   },
-  "versionId": "66005325-88e0-42c1-97a8-531223520ee3",
+  "versionId": "b84c93e5-512e-4158-9e13-9e49cd13cc0a",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "99760253acafc950b45bca9d40f879d0c42df29fd78f9c11e457ea708e011beb"
   },
-  "id": "0huoYCudmZmhIQiu",
+  "id": "rw9VgMwXpq298xl9",
   "tags": []
 }

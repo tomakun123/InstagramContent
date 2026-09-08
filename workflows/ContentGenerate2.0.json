@@ -1,5 +1,5 @@
 {
-  "name": "ContentGenerate",
+  "name": "ContentGenerate2.0",
   "nodes": [
     {
       "parameters": {
@@ -9,10 +9,10 @@
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1.1,
       "position": [
-        400,
-        0
+        -352,
+        560
       ],
-      "id": "d2fb2336-994c-42a8-9941-2f4fd01c0f0a",
+      "id": "ef1fcd87-ad09-489e-a25a-40245b2ef455",
       "name": "readCounter.txt"
     },
     {
@@ -24,10 +24,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        608,
-        0
+        -144,
+        560
       ],
-      "id": "17316fd8-67d9-4ac8-9cae-af0ce396435b",
+      "id": "a33f0307-a3e1-4fc6-a719-a1f73a12df8a",
       "name": "Extract from File(Counter)"
     },
     {
@@ -39,12 +39,6 @@
               "name": "storyNum",
               "value": "={{ parseInt($json.counterValue)+1 }}",
               "type": "string"
-            },
-            {
-              "id": "ea5eb994-c0d7-4fbe-8e43-b8cdbada2471",
-              "name": "dateStr",
-              "value": "={{ $now.toFormat('yyyy-LL-dd') }}",
-              "type": "string"
             }
           ]
         },
@@ -53,10 +47,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        816,
-        0
+        64,
+        560
       ],
-      "id": "79a26ce2-a955-47f2-b72b-49844990882b",
+      "id": "67a15ae3-9015-4b2a-a057-aa189baa3220",
       "name": "Compute Primitives"
     },
     {
@@ -66,7 +60,7 @@
             {
               "id": "7933de3f-6ec9-4d79-8dce-14ffe988c305",
               "name": "storyFileName",
-              "value": "={{ 'HorrorStory' + $json.storyNum + '_' + $json.dateStr }}",
+              "value": "={{ 'HorrorStory' + $json.storyNum }}",
               "type": "string"
             },
             {
@@ -82,10 +76,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1024,
-        0
+        272,
+        560
       ],
-      "id": "a8e9e7d8-bc25-4473-ace4-607dd422c5cf",
+      "id": "7eeb74d4-5575-4a0d-ae56-947e4a3c3ba9",
       "name": "Build Dependent Fields"
     },
     {
@@ -98,10 +92,10 @@
       "type": "n8n-nodes-base.convertToFile",
       "typeVersion": 1.1,
       "position": [
-        1232,
-        0
+        480,
+        560
       ],
-      "id": "316b8db1-c256-4943-9f67-d712b294c42a",
+      "id": "88a3fd74-37fd-452e-b3b1-a6e06aecb9fc",
       "name": "Pull New Counter Value"
     },
     {
@@ -114,10 +108,10 @@
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1.1,
       "position": [
-        1440,
-        0
+        688,
+        560
       ],
-      "id": "7209b203-7306-4fcd-ac81-8c8e3559a922",
+      "id": "b70370bb-2f5e-4b0a-bc2e-e6bd9be4c0a5",
       "name": "Update Counter File"
     },
     {
@@ -129,10 +123,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        624,
-        -112
+        -128,
+        448
       ],
-      "id": "785c4a99-817b-434c-9466-5396a102ad5f",
+      "id": "cd95c8cf-5b27-42af-b1c9-9e424eb90ccc",
       "name": "Sticky Note"
     },
     {
@@ -145,10 +139,10 @@
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1.1,
       "position": [
-        1008,
-        336
+        704,
+        896
       ],
-      "id": "d5fca3ff-a60c-4718-b47b-b4a86d154d95",
+      "id": "e792cae9-8c9e-4438-86a8-8c3fe3d1013b",
       "name": "Write Horror Story to vscode"
     },
     {
@@ -168,10 +162,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        576,
-        336
+        272,
+        896
       ],
-      "id": "8bd99c9e-dcce-4e8d-b5db-3673851697c2",
+      "id": "c86b4890-5949-4f19-acb5-e039fcfbc8cb",
       "name": "Set Story Value"
     },
     {
@@ -184,10 +178,10 @@
       "type": "n8n-nodes-base.convertToFile",
       "typeVersion": 1.1,
       "position": [
-        784,
-        336
+        480,
+        896
       ],
-      "id": "48433f04-62b4-46b7-936e-24b018d88023",
+      "id": "ee9164ab-1e43-4c11-944a-ca093a41928b",
       "name": "Create txt File from Story"
     },
     {
@@ -199,10 +193,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        544,
-        224
+        -208,
+        784
       ],
-      "id": "b3d11699-ce71-486b-a509-94806ba8d0d6",
+      "id": "fd2fd3c2-a3a1-4688-867a-726723c6905b",
       "name": "Sticky Note1"
     },
     {
@@ -214,52 +208,19 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        784,
-        560
+        32,
+        1120
       ],
-      "id": "93180632-30b1-4de0-a086-6a21b9320d7e",
+      "id": "97cb08be-8c64-4378-954c-742a5157c5c5",
       "name": "Sticky Note2"
     },
     {
       "parameters": {
         "modelId": {
           "__rl": true,
-          "value": "meta-llama-3.1-8b-instruct",
+          "value": "qwen2.5-14b-instruct",
           "mode": "list",
-          "cachedResultName": "META-LLAMA-3.1-8B-INSTRUCT"
-        },
-        "responses": {
-          "values": [
-            {
-              "content": "IMPORTANT CONTEXT RESET:\nYou must NOT use, recall, reference, or be influenced by any previous prompts, conversations, outputs, or stories.\nTreat this prompt as the ONLY context.\nDo not reuse names, situations, structures, or phrasing from any prior generation. This also means writing an interesting hook in the beginning to capture the audience, not always starting with the same first sentence.\n\nYou are writing an original horror short story.\n\nBefore writing the story, silently choose ONE option from EACH category below.\nDo NOT reveal your choices.\n\nCHARACTER CONSTRAINTS:\n- Use exactly 0, 1, 2, or 3 named characters (choose randomly).\n- If names are used, they must be new, uncommon, and not reused from any previous story.\n- Avoid common English names.\n- Prefer uncommon names, surnames-as-first-names, or culturally varied names.\n- Do not reuse a name once chosen.\n- If unsure, invent a plausible but uncommon name.\n\nPOV (choose one):\n- First-person\n- Close third-person\n- Second-person\n- Objective, external-only narration\n- Epistolary (letters, emails, logs, reports)\n- Found footage or transcript style\n- Testimony or deposition\n- Instructional or procedural voice\n- Collective “we” narration\n- Unreliable first-person\n- Alternating limited perspectives\n- Fragmented documents only\n- Clinical or professional voice\n- Present-tense observation\n- Retrospective confession\n\nHORROR MODE (choose one):\n- Psychological\n- Social\n- Existential\n- Body (non-gory)\n- Institutional\n- Routine distortion\n- Identity erosion\n- Surveillance or observation\n- Monster or alien presence\n- Cosmic indifference\n- Paranoia\n- Isolation\n- Contagion (social or physical)\n- Environmental hostility\n- Bureaucratic nightmare\n- Predestination\n- Memory decay\n- Moral corrosion\n- Control versus obedience\n- Unseen predator\n- Technological dread\n- Folk horror (restrained)\n- Invasion of privacy\n- Dependency horror\n\nSETTING (choose one):\n- Home\n- Apartment building\n- Workplace\n- Factory or warehouse\n- School\n- University campus\n- Hospital\n- Clinic or care facility\n- Transit (train, subway, bus, plane)\n- Highway or roadside stop\n- Public building after hours\n- Library or archive\n- Online or digital space\n- Moderation queue or call center\n- Outdoor rural area\n- Farm or fields\n- Ship or offshore platform\n- Submarine or enclosed vessel\n- Graveyard or cemetery\n- Funeral home\n- Old forest\n- Park or nature reserve\n- Cave system\n- Tunnel or underground passage\n- Abandoned town\n- Border crossing\n- Hotel or motel\n- Construction site\n- Storage facility\n- Religious building\n- Military or research installation\n\nSOURCE OF WRONGNESS (choose one):\n- A person acting almost normally\n- A system functioning exactly as intended\n- A rule that cannot be broken\n- A routine that punishes deviation\n- Time behaving inconsistently\n- Missing or erased information\n- Subtle physical change\n- Social pressure or consensus\n- Someone remembers events differently each time\n- A person performs care perfectly but without variance\n- Someone refuses to acknowledge an obvious absence\n- A trusted figure defers decisions to someone unseen\n- A process completes itself without user input\n- Compliance creates worse outcomes than resistance\n- Errors are logged but never corrected\n- Records exist for events no one recalls\n- Effects consistently precede causes\n- Repetition occurs with unsettling variation\n- Gaps in time are noticed only through consequences\n- Objects return to approximate positions\n- The narrator stops recognizing familiar things\n- Written rules contradict spoken ones\n- Internal thoughts no longer match actions\n- A space subtly resists being altered\n- Rooms are dimensionally wrong but functional\n- Silence is treated as participation\n- Refusal is interpreted as consent\n- Help requires surrendering autonomy\n- Observation changes outcomes\n- Care is conditional on compliance\n- Everyone agrees the narrator is mistaken\n- Concern is framed as selfishness\n- Deviation triggers quiet escalation\n- The wrongness is statistically insignificant\n- The system improves after harm occurs\n\nENDING TYPE (choose one):\n- Irreversible action\n- Permanent physical change\n- Moral compromise\n- Loss of autonomy\n- Forced participation\n- Replacement or erasure\n- Absorption into a system\n- Horror becomes normalized\n- The narrator completes an action they resisted\n- Control is transferred temporarily and never returned\n- Decisions are made without the narrator’s input\n- The narrator enforces a rule they opposed\n- Harm is reframed as care\n- Responsibility is diffused until untraceable\n- The narrator adopts procedural language\n- A role replaces personal identity\n- Memories are deprioritized in favor of stability\n- The narrator becomes infrastructure\n- Removal becomes impossible without collapse\n- The narrator inherits unresolved duties\n- Someone else occupies the narrator’s former place\n- Records quietly update to a new reality\n- Absence becomes indistinguishable from replacement\n- The narrator plans around the horror\n- The final act is mundane and administrative\n- The narrator prepares another person\n- The body adapts without comment\n- Discomfort becomes baseline\n- The system now requires the narrator\n- The horror is acknowledged only through logistics\n- Routine continues uninterrupted\n- The narrator stops attempting resistance\n- The ending shows continuity, not closure\n\nWRITING REQUIREMENTS:\n- 500–750 words\n- Serious, grounded tone\n- No comedy, no camp\n- No overt explanations\n- Avoid clichés and familiar horror tropes\n- Let implications and concrete detail carry meaning\n- The ending must SHOW consequences, not merely reveal them\n\nBegin the story immediately.\nDo not include a title, preface, or explanation.\n"
-            }
-          ]
-        },
-        "builtInTools": {},
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.openAi",
-      "typeVersion": 2.1,
-      "position": [
-        224,
-        336
-      ],
-      "id": "b1ae0054-801a-46cc-8ef4-2620ca426c4e",
-      "name": "Generate Horror Story",
-      "credentials": {
-        "openAiApi": {
-          "id": "JCfXlzmwWXSikEm9",
-          "name": "OpenAi account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "modelId": {
-          "__rl": true,
-          "value": "meta-llama-3.1-8b-instruct",
-          "mode": "list",
-          "cachedResultName": "META-LLAMA-3.1-8B-INSTRUCT"
+          "cachedResultName": "QWEN2.5-14B-INSTRUCT"
         },
         "responses": {
           "values": [
@@ -274,10 +235,10 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 2.1,
       "position": [
-        224,
-        672
+        -320,
+        1232
       ],
-      "id": "f22d8e49-7408-4de7-8010-114626b3f4c2",
+      "id": "b67e535c-18fc-4ace-9ca7-0d6fee759a07",
       "name": "Generate Metadata",
       "credentials": {
         "openAiApi": {
@@ -333,10 +294,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        992,
-        672
+        448,
+        1232
       ],
-      "id": "33c51ee7-61ef-4341-8e22-e3a202d8cae4",
+      "id": "195383f3-eb3e-4bdd-9c49-3eaf435a0fda",
       "name": "Set Metadata"
     },
     {
@@ -346,10 +307,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        816,
-        672
+        272,
+        1232
       ],
-      "id": "66205774-8631-4e6e-b586-688c27308b22",
+      "id": "e5184c25-f496-434f-b7da-a2665c4d332d",
       "name": "Code in JavaScript"
     },
     {
@@ -369,10 +330,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1200,
-        672
+        656,
+        1232
       ],
-      "id": "965f3039-61a0-44af-a869-e7804db1cc03",
+      "id": "d062067a-cabd-46f7-b0d0-a972d25a8e4f",
       "name": "One variable"
     },
     {
@@ -385,10 +346,10 @@
       "type": "n8n-nodes-base.convertToFile",
       "typeVersion": 1.1,
       "position": [
-        1408,
-        672
+        864,
+        1232
       ],
-      "id": "0d3acc13-322d-4668-ba8e-accbe3662340",
+      "id": "a34ecee0-f774-44eb-a4fa-0248120b0099",
       "name": "Convert to TextFile"
     },
     {
@@ -401,10 +362,10 @@
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1.1,
       "position": [
-        1616,
-        672
+        1072,
+        1232
       ],
-      "id": "5a7eced1-e89d-4874-ab92-bbdb7105a84d",
+      "id": "b22b4cf8-4737-4807-83bf-0231cbd212c3",
       "name": "Write Metadata into vscode"
     },
     {
@@ -421,10 +382,10 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.3,
       "position": [
-        -432,
-        -224
+        -1280,
+        576
       ],
-      "id": "12ee5403-745c-4b22-9165-b617bfb9c732",
+      "id": "da15db8f-8777-4474-b94b-4c704d77e6e0",
       "name": "Schedule Trigger",
       "executeOnce": true,
       "notesInFlow": false
@@ -457,24 +418,24 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        944,
-        944
+        400,
+        1504
       ],
-      "id": "70957578-5e8b-48a3-9b25-358fe76347c1",
+      "id": "a8a4b284-380c-4c7f-a3a2-efea77954f48",
       "name": "If"
     },
     {
       "parameters": {
-        "amount": 35,
+        "amount": 25,
         "unit": "minutes"
       },
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        224,
-        944
+        -320,
+        1504
       ],
-      "id": "1dd81add-b7ac-4112-a034-f4110d35d985",
+      "id": "7d5b2977-60a5-41f0-94cf-dc3273a2ab6e",
       "name": "Wait",
       "webhookId": "cf6ba7dd-d9af-43a9-973d-62f614c7b3b8"
     },
@@ -486,10 +447,10 @@
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1.1,
       "position": [
-        752,
-        944
+        208,
+        1504
       ],
-      "id": "a04df58c-519f-44a7-b77d-cc517793c1a8",
+      "id": "b9da7fb6-b4bc-435e-ae3c-e32d9c8d2ba9",
       "name": "FINALREADPART",
       "onError": "continueRegularOutput"
     },
@@ -501,10 +462,10 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        1184,
-        864
+        640,
+        1424
       ],
-      "id": "e5b1b4d1-e637-411f-9a87-888dd87ea6b6",
+      "id": "b21fd179-5b4f-4cea-84ff-598c1806a0b0",
       "name": "Wait1",
       "webhookId": "1cb87b05-51ac-4dfe-97a6-330175acb4fa"
     },
@@ -517,67 +478,11 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        304,
-        576
+        -672,
+        1232
       ],
-      "id": "9b37fdec-2da0-42fc-89e1-e01dbc7a0923",
+      "id": "9e6c956c-5398-4cfa-bbea-58c3beb40336",
       "name": "Sticky Note3"
-    },
-    {
-      "parameters": {
-        "workflowId": {
-          "__rl": true,
-          "value": "0huoYCudmZmhIQiu",
-          "mode": "list",
-          "cachedResultUrl": "/workflow/0huoYCudmZmhIQiu",
-          "cachedResultName": "NEWEST-WORKFLOW-SHOULD-WORK"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {},
-          "matchingColumns": [],
-          "schema": [],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "position": [
-        1184,
-        1008
-      ],
-      "id": "1d216513-df8a-444c-af7e-2fab278a2a3e",
-      "name": "Call 'NEWEST-WORKFLOW-SHOULD-WORK'"
-    },
-    {
-      "parameters": {
-        "workflowId": {
-          "__rl": true,
-          "value": "0huoYCudmZmhIQiu",
-          "mode": "list",
-          "cachedResultUrl": "/workflow/0huoYCudmZmhIQiu",
-          "cachedResultName": "NEWEST-WORKFLOW-SHOULD-WORK"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {},
-          "matchingColumns": [],
-          "schema": [],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "position": [
-        1376,
-        864
-      ],
-      "id": "d4dec3ac-74bf-4f7a-9d7b-236a3ea1a1d8",
-      "name": "Call 'NEWEST-WORKFLOW-SHOULD-WORK'1"
     },
     {
       "parameters": {
@@ -589,10 +494,10 @@
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1.1,
       "position": [
-        -240,
-        -224
+        -992,
+        336
       ],
-      "id": "050456e0-9213-4aa9-aef7-6a2bb1ca1ecf",
+      "id": "109f3b05-90c0-499b-b63f-b0e62e51f008",
       "name": "Read/Write Files from Disk",
       "onError": "continueRegularOutput"
     },
@@ -623,10 +528,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -16,
-        -224
+        -768,
+        336
       ],
-      "id": "d59fd2fd-e14c-489e-b76a-4feba7eb3bbe",
+      "id": "25e58854-d48d-4e95-93ca-250ef130472b",
       "name": "If1"
     },
     {
@@ -636,10 +541,10 @@
       "type": "n8n-nodes-base.stopAndError",
       "typeVersion": 1,
       "position": [
-        592,
-        -240
+        -160,
+        320
       ],
-      "id": "d614d596-e159-46d5-825e-9f2bac8ab56e",
+      "id": "d3dbd98d-69d2-41ce-8a54-f965726598af",
       "name": "Stop and Error"
     },
     {
@@ -649,10 +554,10 @@
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        400,
-        -240
+        -352,
+        320
       ],
-      "id": "ab75146e-9668-4781-a0d9-3c5d64be4c92",
+      "id": "6a03ad08-a048-4413-8924-68594858d31a",
       "name": "Execute Command1",
       "onError": "continueRegularOutput"
     },
@@ -663,11 +568,121 @@
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        176,
-        0
+        -576,
+        560
       ],
-      "id": "8b218a0a-6934-49ff-a0c5-55247d866bf7",
+      "id": "a33d1d8b-67f2-4164-9bd5-13eb9393b3c9",
       "name": "Execute Command2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1280,
+        336
+      ],
+      "id": "0feb9099-3c94-4a84-9eb0-72bef7486b54",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "content": "### Changes from V1 ###\n- removed date, just count for file name\n- implemented multi-prompt system for content generation\n- Also changed publishing to match data fetching for file name)\n- All LLM models reliant on QWEN instead of meta-llama",
+        "height": 240,
+        "width": 464
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        304
+      ],
+      "id": "61e818e9-5240-45a9-8916-f2ac81e97b2a",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "rw9VgMwXpq298xl9",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/rw9VgMwXpq298xl9",
+          "cachedResultName": "PublishingContent2.0"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        608,
+        1600
+      ],
+      "id": "e9771d6d-84d1-4a4c-8b65-778e0ff340d0",
+      "name": "Call 'PublishingContent2.0'"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "rw9VgMwXpq298xl9",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/rw9VgMwXpq298xl9",
+          "cachedResultName": "PublishingContent2.0"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        816,
+        1424
+      ],
+      "id": "acb63d1a-4768-4a6e-89fa-89cf326de62c",
+      "name": "Call 'PublishingContent2.0'1"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "3pvuJTTxuvOOkFsx",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/3pvuJTTxuvOOkFsx",
+          "cachedResultName": "PromptHorrorGeneration"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -320,
+        896
+      ],
+      "id": "10e63d1a-6585-4700-a9b7-3e1bdf28bae5",
+      "name": "Call 'PromptHorrorGeneration'1"
     }
   ],
   "pinData": {},
@@ -731,7 +746,18 @@
       "main": [
         [
           {
-            "node": "Generate Horror Story",
+            "node": "Call 'PromptHorrorGeneration'1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Horror Story to vscode": {
+      "main": [
+        [
+          {
+            "node": "Generate Metadata",
             "type": "main",
             "index": 0
           }
@@ -754,28 +780,6 @@
         [
           {
             "node": "Write Horror Story to vscode",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Write Horror Story to vscode": {
-      "main": [
-        [
-          {
-            "node": "Generate Metadata",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Generate Horror Story": {
-      "main": [
-        [
-          {
-            "node": "Set Story Value",
             "type": "main",
             "index": 0
           }
@@ -848,6 +852,35 @@
         ]
       ]
     },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call 'PublishingContent2.0'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Wait": {
       "main": [
         [
@@ -870,40 +903,11 @@
         ]
       ]
     },
-    "If": {
-      "main": [
-        [
-          {
-            "node": "Wait1",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Call 'NEWEST-WORKFLOW-SHOULD-WORK'",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Wait1": {
       "main": [
         [
           {
-            "node": "Call 'NEWEST-WORKFLOW-SHOULD-WORK'1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Schedule Trigger": {
-      "main": [
-        [
-          {
-            "node": "Read/Write Files from Disk",
+            "node": "Call 'PublishingContent2.0'1",
             "type": "main",
             "index": 0
           }
@@ -960,24 +964,34 @@
           }
         ]
       ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        []
+      ]
+    },
+    "Call 'PromptHorrorGeneration'1": {
+      "main": [
+        [
+          {
+            "node": "Set Story Value",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "availableInMCP": false,
-    "timeSavedMode": "fixed",
-    "saveDataErrorExecution": "all",
-    "saveDataSuccessExecution": "all",
-    "saveExecutionProgress": true,
-    "saveManualExecutions": true,
-    "callerPolicy": "workflowsFromSameOwner"
+    "binaryMode": "separate",
+    "availableInMCP": true
   },
-  "versionId": "7078ccc6-ea34-4493-91d2-398be5e2eb46",
+  "versionId": "b8d73a8a-db46-49da-9a7b-442ec5e9c2a8",
   "meta": {
-    "templateCredsSetupCompleted": true,
     "instanceId": "99760253acafc950b45bca9d40f879d0c42df29fd78f9c11e457ea708e011beb"
   },
-  "id": "NmdnraHll2xvvPGC",
+  "id": "0LxPT1UIGzpFqZM3",
   "tags": []
 }

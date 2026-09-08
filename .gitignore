@@ -9,25 +9,16 @@ Thumbs.db
 # --------------------
 # Python virtual environments
 # --------------------
-venv/
-.env/
 .venv/
+venv/
 env/
-.env
-.env.local
 
 # --------------------
-# Misc Files and Folders
+# Environment / secrets
 # --------------------
-useless_rn
-*.mp3
-*.mp4
-package-lock.json
-package.json
-noteToSelf
-*.m4a
-HorrorStory*.txt
-*_metadata.json
+.env
+.env.local
+.env.*.local
 
 # --------------------
 # Python cache / compiled files
@@ -38,9 +29,29 @@ __pycache__/
 *.pyd
 
 # --------------------
-# VS Code settings (optional)
+# Runtime output (generated every run)
 # --------------------
-.vscode/
+HorrorStories/HorrorStory*.txt
+HorrorStories/*.lock
+HorrorAudio/
+HorrorVideos/
+Metadata/
+logs/
+version1/
+
+# --------------------
+# Large binary assets (kept locally, not in git)
+# --------------------
+assets/*.mp4
+assets/*.mp3
+*.m4a
+
+# --------------------
+# Node (n8n is installed globally, not vendored here)
+# --------------------
+node_modules/
+package.json
+package-lock.json
 
 # --------------------
 # Logs & temp files
@@ -48,15 +59,4 @@ __pycache__/
 *.log
 *.tmp
 *.swp
-
-# --------------------
-# Environment / secrets
-# --------------------
-.env.local
-.env.*.local
-
-# --------------------
-# Git
-# --------------------
 *.orig
-node_modules
