@@ -145,10 +145,27 @@ function Start-Logged {
 }
 
 function Resolve-Command {
+    <# Find a *launchable* path for a command.
+
+       Get-Command prefers .ps1 shims (npm installs n8n.ps1, n8n.cmd and n8n
+       side by side), but Start-Process cannot execute a .ps1 - it hands it to
+       the shell's default handler instead. So prefer real executables. #>
     param([string]$Name)
-    $c = Get-Command $Name -ErrorAction SilentlyContinue
-    if ($null -eq $c) { return $null }
-    return $c.Source
+
+    $candidates = @(Get-Command $Name -All -ErrorAction SilentlyContinue |
+                    Where-Object { $_.CommandType -eq 'Application' })
+    if ($candidates.Count -eq 0) { return $null }
+
+    foreach ($ext in @('.exe', '.cmd', '.bat', '.com')) {
+        $hit = $candidates | Where-Object {
+            [System.IO.Path]::GetExtension($_.Source).ToLower() -eq $ext
+        } | Select-Object -First 1
+        if ($hit) { return $hit.Source }
+    }
+
+    # Nothing directly launchable - fall back to the first match and let the
+    # caller fail loudly rather than silently opening it in an editor.
+    return $candidates[0].Source
 }
 
 function Abort {
@@ -248,18 +265,29 @@ if ($SkipTunnel) {
         if ($null -eq $cf) {
             Abort 'cloudflared not found on PATH.'
         }
-        if (-not $TunnelName) {
-            Abort 'No tunnel configured. Add CLOUDFLARED_TUNNEL=<tunnel-name> to .env, or pass -SkipTunnel.'
+
+        # ~/.cloudflared/config.yml normally names the tunnel already, in which
+        # case `cloudflared tunnel run` needs no argument. Only insist on an
+        # explicit name when there is no config to fall back on.
+        $cfConfig = Join-Path $env:USERPROFILE '.cloudflared\config.yml'
+        if ($TunnelName) {
+            $cfArgs = @('tunnel', 'run', $TunnelName)
+            $label  = "tunnel '$TunnelName'"
+        } elseif (Test-Path $cfConfig) {
+            $cfArgs = @('tunnel', 'run')
+            $label  = 'tunnel (from ~/.cloudflared/config.yml)'
+        } else {
+            Abort 'No tunnel configured: no CLOUDFLARED_TUNNEL in .env and no ~/.cloudflared/config.yml. Pass -SkipTunnel to run without it.'
         }
 
-        $p = Start-Logged -Name 'cloudflared' -FilePath $cf -ArgumentList @('tunnel', 'run', $TunnelName)
+        $p = Start-Logged -Name 'cloudflared' -FilePath $cf -ArgumentList $cfArgs
         $Started['cloudflared'] = $p.Id
 
         Start-Sleep -Seconds 5
         if ($p.HasExited) {
             Abort "cloudflared exited immediately (code $($p.ExitCode)). Check logs\cloudflared-$Stamp.err.log"
         }
-        Write-Ok "tunnel '$TunnelName' running (pid $($p.Id))"
+        Write-Ok "$label running (pid $($p.Id))"
     }
 }
 
