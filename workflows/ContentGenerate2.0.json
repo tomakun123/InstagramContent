@@ -392,85 +392,6 @@
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "loose",
-            "version": 3
-          },
-          "conditions": [
-            {
-              "id": "3e557383-7827-46e2-b623-1e5c0188b58b",
-              "leftValue": "={{ 'C:/Users/Thomas M/Desktop/InstagramContent/HorrorVideos/' + $json.fileName }}",
-              "rightValue": "={{ 'C:/Users/Thomas M/Desktop/InstagramContent/HorrorVideos/' + $('Build Dependent Fields').item.json.storyFileName + '.part.mp4' }}",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "looseTypeValidation": true,
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        400,
-        1504
-      ],
-      "id": "a8a4b284-380c-4c7f-a3a2-efea77954f48",
-      "name": "If"
-    },
-    {
-      "parameters": {
-        "amount": 25,
-        "unit": "minutes"
-      },
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
-      "position": [
-        -320,
-        1504
-      ],
-      "id": "7d5b2977-60a5-41f0-94cf-dc3273a2ab6e",
-      "name": "Wait",
-      "webhookId": "cf6ba7dd-d9af-43a9-973d-62f614c7b3b8"
-    },
-    {
-      "parameters": {
-        "fileSelector": "={{ 'C:/Users/Thomas M/Desktop/InstagramContent/HorrorVideos/' + $('Build Dependent Fields').item.json.storyFileName + '.part.mp4' }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.readWriteFile",
-      "typeVersion": 1.1,
-      "position": [
-        208,
-        1504
-      ],
-      "id": "b9da7fb6-b4bc-435e-ae3c-e32d9c8d2ba9",
-      "name": "FINALREADPART",
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "amount": 10,
-        "unit": "minutes"
-      },
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
-      "position": [
-        640,
-        1424
-      ],
-      "id": "b21fd179-5b4f-4cea-84ff-598c1806a0b0",
-      "name": "Wait1",
-      "webhookId": "1cb87b05-51ac-4dfe-97a6-330175acb4fa"
-    },
-    {
-      "parameters": {
         "content": "Thinking of adding if statement incase model doesnt generate JSON, and then to tell it to reformat and make sure its in JSON",
         "height": 112,
         "color": 3
@@ -604,62 +525,6 @@
       "parameters": {
         "workflowId": {
           "__rl": true,
-          "value": "rw9VgMwXpq298xl9",
-          "mode": "list",
-          "cachedResultUrl": "/workflow/rw9VgMwXpq298xl9",
-          "cachedResultName": "PublishingContent2.0"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {},
-          "matchingColumns": [],
-          "schema": [],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "position": [
-        608,
-        1600
-      ],
-      "id": "e9771d6d-84d1-4a4c-8b65-778e0ff340d0",
-      "name": "Call 'PublishingContent2.0'"
-    },
-    {
-      "parameters": {
-        "workflowId": {
-          "__rl": true,
-          "value": "rw9VgMwXpq298xl9",
-          "mode": "list",
-          "cachedResultUrl": "/workflow/rw9VgMwXpq298xl9",
-          "cachedResultName": "PublishingContent2.0"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {},
-          "matchingColumns": [],
-          "schema": [],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "position": [
-        816,
-        1424
-      ],
-      "id": "acb63d1a-4768-4a6e-89fa-89cf326de62c",
-      "name": "Call 'PublishingContent2.0'1"
-    },
-    {
-      "parameters": {
-        "workflowId": {
-          "__rl": true,
           "value": "3pvuJTTxuvOOkFsx",
           "mode": "list",
           "cachedResultUrl": "/workflow/3pvuJTTxuvOOkFsx",
@@ -683,6 +548,29 @@
       ],
       "id": "10e63d1a-6585-4700-a9b7-3e1bdf28bae5",
       "name": "Call 'PromptHorrorGeneration'1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c0117e11-9f3a-4f77-9d2e-5b6a0f2c31aa",
+              "name": "newCounterValue",
+              "value": "={{ $('Build Dependent Fields').item.json.newCounterValue }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        912,
+        896
+      ],
+      "id": "9d2c4f60-71ab-4e08-8c1f-2a5b7c3e9d41",
+      "name": "Commit Counter"
     }
   ],
   "pinData": {},
@@ -724,7 +612,7 @@
       "main": [
         [
           {
-            "node": "Pull New Counter Value",
+            "node": "Call 'PromptHorrorGeneration'1",
             "type": "main",
             "index": 0
           }
@@ -746,7 +634,7 @@
       "main": [
         [
           {
-            "node": "Call 'PromptHorrorGeneration'1",
+            "node": "Generate Metadata",
             "type": "main",
             "index": 0
           }
@@ -757,7 +645,7 @@
       "main": [
         [
           {
-            "node": "Generate Metadata",
+            "node": "Commit Counter",
             "type": "main",
             "index": 0
           }
@@ -843,13 +731,7 @@
     },
     "Write Metadata into vscode": {
       "main": [
-        [
-          {
-            "node": "Wait",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Schedule Trigger": {
@@ -857,57 +739,6 @@
         [
           {
             "node": "Read/Write Files from Disk",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "If": {
-      "main": [
-        [
-          {
-            "node": "Wait1",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Call 'PublishingContent2.0'",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait": {
-      "main": [
-        [
-          {
-            "node": "FINALREADPART",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "FINALREADPART": {
-      "main": [
-        [
-          {
-            "node": "If",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait1": {
-      "main": [
-        [
-          {
-            "node": "Call 'PublishingContent2.0'1",
             "type": "main",
             "index": 0
           }
@@ -967,7 +798,13 @@
     },
     "When clicking ‘Execute workflow’": {
       "main": [
-        []
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Call 'PromptHorrorGeneration'1": {
@@ -975,6 +812,17 @@
         [
           {
             "node": "Set Story Value",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Commit Counter": {
+      "main": [
+        [
+          {
+            "node": "Pull New Counter Value",
             "type": "main",
             "index": 0
           }

@@ -40,3 +40,13 @@ def ensure_dirs() -> None:
     """Create every runtime output directory if it does not already exist."""
     for d in (STORIES, AUDIO, VIDEOS, METADATA, LOGS):
         d.mkdir(parents=True, exist_ok=True)
+
+
+def render_webhook() -> str:
+    """n8n webhook to POST to when a render finishes, or '' if not configured.
+
+    Set N8N_RENDER_WEBHOOK in .env. When unset the pipeline still renders; it
+    just does not trigger publishing.
+    """
+    import os
+    return os.environ.get("N8N_RENDER_WEBHOOK", "").strip()

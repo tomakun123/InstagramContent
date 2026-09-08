@@ -50,7 +50,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return $input.all().map(item => {\n  item.json.ytBody = {\n    snippet: {\n      title: (item.json.metadata?.title) + ': ' + (item.json.metadata?.hook) + \" #shorts\",\n      description: item.json.metadata?.caption_youtube + \"\\n\\n#shorts\",\n      tags: [\n        \"#shorts\",\"#ytshorts\",\"#horrorstories\",\"#scary\",\"#horrorshorts\",\n        \"#creepystories\",\"#watchtilltheend\",\"#disturbing\",\"#paranormal\",\"#dontwatchalone\"\n      ],\n      categoryId: 24\n    },\n    status: {\n      privacyStatus: \"private\",\n      selfDeclaredMadeForKids: false\n    }\n  };\n  return item;\n});\n"
+        "jsCode": "return $input.all().map(item => {\n  item.json.ytBody = {\n    snippet: {\n      title: (item.json.title) + ': ' + (item.json.hook) + \" #shorts\",\n      description: item.json.caption_youtube + \"\\n\\n#shorts\",\n      tags: [\n        \"#shorts\",\"#ytshorts\",\"#horrorstories\",\"#scary\",\"#horrorshorts\",\n        \"#creepystories\",\"#watchtilltheend\",\"#disturbing\",\"#paranormal\",\"#dontwatchalone\"\n      ],\n      categoryId: 24\n    },\n    status: {\n      privacyStatus: \"private\",\n      selfDeclaredMadeForKids: false\n    }\n  };\n  return item;\n});\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -122,35 +122,6 @@
       ],
       "id": "5d9df53f-4996-4673-a31d-8038f1a2b68f",
       "name": "Merge3"
-    },
-    {
-      "parameters": {
-        "fileSelector": "C:\\Users\\Thomas M\\Desktop\\InstagramContent\\HorrorStories\\counter.txt",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.readWriteFile",
-      "typeVersion": 1.1,
-      "position": [
-        -2400,
-        64
-      ],
-      "id": "c8f0bd86-c10b-41db-8db6-03fb11c30458",
-      "name": "readCounter.txt1"
-    },
-    {
-      "parameters": {
-        "operation": "text",
-        "destinationKey": "counterValue",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.extractFromFile",
-      "typeVersion": 1.1,
-      "position": [
-        -2176,
-        64
-      ],
-      "id": "c7807e26-cc24-452f-abb0-33fb2d9aa2d7",
-      "name": "Extract from File(Counter)1"
     },
     {
       "parameters": {
@@ -296,16 +267,20 @@
     },
     {
       "parameters": {
-        "inputSource": "passthrough"
+        "httpMethod": "POST",
+        "path": "render-complete",
+        "responseMode": "onReceived",
+        "options": {}
       },
       "id": "78bba1d6-1c79-467b-a67a-929ff0d3f9d2",
-      "typeVersion": 1.1,
+      "typeVersion": 2,
       "name": "Start",
-      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "type": "n8n-nodes-base.webhook",
       "position": [
         -2656,
         64
-      ]
+      ],
+      "webhookId": "render-complete-4f1c8a92"
     },
     {
       "parameters": {
@@ -339,7 +314,7 @@
         "regionCode": "US",
         "categoryId": "={{ $json.snippet.categoryId }}",
         "updateFields": {
-          "description": "={{ $('Code in JavaScript4').item.json.caption_youtube + $('Code in JavaScript4').item.json.ytBody.snippet.tags + '\\n\\nMusic Credit - \\nComposer: Toby Fox\\nCCA: Materia Music Publishing\\nVideo: https://www.youtube.com/watch?v=jNrJT6lL9J4\\n\\nBackground Video Credit: https://www.youtube.com/watch?v=Lt-k-1eD5bE&t=33s' }}",
+          "description": "={{ $('Code in JavaScript4').item.json.caption_youtube + $('Code in JavaScript4').item.json.ytBody.snippet.tags.join(' ') + '\\n\\nMusic Credit - \\nComposer: Toby Fox\\nCCA: Materia Music Publishing\\nVideo: https://www.youtube.com/watch?v=jNrJT6lL9J4\\n\\nBackground Video Credit: https://www.youtube.com/watch?v=Lt-k-1eD5bE&t=33s' }}",
           "privacyStatus": "public",
           "tags": "creepystories,disturbing,dontwatchalone,horrorshorts,horrorstories,paranormal,scary,#shorts,watchtilltheend,ytshorts"
         }
@@ -378,32 +353,9 @@
         "assignments": {
           "assignments": [
             {
-              "id": "0762f82b-5765-4346-a730-39baf9dfe10a",
-              "name": "storyNum",
-              "value": "={{ parseInt($json.counterValue) }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        -1952,
-        64
-      ],
-      "id": "4b45e6f4-dc13-49a9-9e30-807c8a3bd731",
-      "name": "storyNum"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
               "id": "7933de3f-6ec9-4d79-8dce-14ffe988c305",
               "name": "storyFileName",
-              "value": "={{ 'HorrorStory' + $('storyNum').item.json.storyNum }}",
+              "value": "={{ $json.body.story_file_name || ('HorrorStory' + $json.body.story_number) }}",
               "type": "string"
             }
           ]
@@ -420,18 +372,7 @@
       "name": "storyFileName"
     }
   ],
-  "pinData": {
-    "Start": [
-      {
-        "json": {
-          "mimeType": "application/mp4",
-          "fileName": "HorrorStory15_2026-01-12.part.mp4",
-          "fileExtension": "mp4",
-          "fileSize": "20.4 MB"
-        }
-      }
-    ]
-  },
+  "pinData": {},
   "connections": {
     "Edit Fields1": {
       "main": [
@@ -509,28 +450,6 @@
         ]
       ]
     },
-    "readCounter.txt1": {
-      "main": [
-        [
-          {
-            "node": "Extract from File(Counter)1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract from File(Counter)1": {
-      "main": [
-        [
-          {
-            "node": "storyNum",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "HTTP Request PUT1": {
       "main": [
         [
@@ -590,7 +509,7 @@
       "main": [
         [
           {
-            "node": "readCounter.txt1",
+            "node": "storyFileName",
             "type": "main",
             "index": 0
           }
@@ -613,17 +532,6 @@
         [
           {
             "node": "Read Video from Disk1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "storyNum": {
-      "main": [
-        [
-          {
-            "node": "storyFileName",
             "type": "main",
             "index": 0
           }
