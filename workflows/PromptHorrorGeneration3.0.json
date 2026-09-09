@@ -1,0 +1,177 @@
+{
+  "name": "PromptHorrorGeneration3.0",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "150edf1d-5ce2-4d7c-bd81-0bf6bb234d85",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Two axes instead of eight. The old brief stacked POV, horror mode, setting,\n// wrongness, ending type, tone, narrative constraint and opening style. qwen spent\n// its capacity satisfying them mechanically rather than writing something\n// frightening, and the elements often did not cohere.\n// setting x wrongness x final move is still ~60,000 combinations.\n\nconst settings = [\n  // Domestic\n  \"family home — owned\",\n  \"family home — rented\",\n  \"apartment — urban high-rise\",\n  \"apartment — old building low-rise\",\n  \"shared house — multiple tenants\",\n  \"childhood home revisited\",\n  \"house being renovated\",\n  \"house that has just been sold\",\n  \"house with a new addition or extension\",\n  // Work\n  \"open-plan office\",\n  \"call center\",\n  \"content moderation queue\",\n  \"hospital — general ward\",\n  \"hospital — psychiatric unit\",\n  \"hospital — pediatric ward\",\n  \"clinic — private\",\n  \"clinic — government-run\",\n  \"care facility — elderly\",\n  \"care facility — children\",\n  \"care facility — adults with disabilities\",\n  \"school — primary\",\n  \"school — secondary\",\n  \"university campus\",\n  \"university library\",\n  \"research laboratory\",\n  \"military installation\",\n  \"government office\",\n  \"courthouse\",\n  \"police station\",\n  \"factory floor\",\n  \"warehouse\",\n  \"slaughterhouse\",\n  \"construction site — active\",\n  \"construction site — abandoned mid-build\",\n  \"data center\",\n  \"server room\",\n  // Transit\n  \"subway — underground\",\n  \"train — long distance overnight\",\n  \"bus — intercity\",\n  \"airport — terminal\",\n  \"airport — after hours\",\n  \"plane — mid-flight\",\n  \"ferry — open water\",\n  \"highway rest stop\",\n  \"highway — isolated stretch\",\n  \"parking garage\",\n  \"taxi or rideshare\",\n  // Public\n  \"library — public\",\n  \"archive — national or institutional\",\n  \"museum after hours\",\n  \"shopping mall — active\",\n  \"shopping mall — abandoned\",\n  \"supermarket\",\n  \"laundromat — late night\",\n  \"pharmacy\",\n  \"post office\",\n  \"community center\",\n  \"church\",\n  \"mosque\",\n  \"synagogue\",\n  \"temple\",\n  \"funeral home\",\n  \"graveyard\",\n  // Nature and rural\n  \"old growth forest\",\n  \"managed forest — logging area\",\n  \"national park — remote trail\",\n  \"farm — working\",\n  \"farm — abandoned\",\n  \"fields — open flatland\",\n  \"coastline — cliffs\",\n  \"coastline — beach out of season\",\n  \"island — inhabited\",\n  \"island — uninhabited\",\n  \"cave system\",\n  \"mountain pass\",\n  \"marshland or swamp\",\n  \"drought-affected land\",\n  // Specialized\n  \"submarine\",\n  \"offshore oil platform\",\n  \"ship — cargo\",\n  \"ship — cruise\",\n  \"lighthouse\",\n  \"bunker or shelter\",\n  \"tunnel — road\",\n  \"tunnel — pedestrian\",\n  \"sewer system\",\n  \"abandoned town\",\n  \"border crossing\",\n  \"quarantine facility\",\n  \"prison\",\n  \"juvenile detention center\",\n  \"storage facility — self-storage\",\n  \"storage facility — industrial cold storage\",\n  \"hotel — luxury\",\n  \"hotel — budget roadside\",\n  \"motel — isolated\",\n  \"bed and breakfast\",\n  \"online space — social media platform\",\n  \"online space — private forum\",\n  \"online space — video call\",\n  \"online space — multiplayer game world\"\n];\n\nconst wrongnessSources = [\n  // People\n  \"a person acting almost normally but not quite\",\n  \"a person performing care perfectly but without variance\",\n  \"a person who never initiates but always responds\",\n  \"a person who agrees with everything said to them\",\n  \"a trusted figure defers all decisions to someone unseen\",\n  \"a person whose emotional responses are always one beat late\",\n  \"a person who refers to themselves in the third person\",\n  \"a person who remembers events differently each time they recount them\",\n  \"a person who cannot acknowledge an obvious absence\",\n  \"a person whose eyes don't track correctly\",\n  \"a child who speaks only in questions\",\n  \"an authority figure who becomes warm only during harm\",\n  \"a caregiver whose help cannot be refused\",\n  \"a person who finishes others sentences — correctly\",\n  \"a person who knows things they shouldn't\",\n  \"everyone agrees the narrator is mistaken\",\n  \"no one reacts to what the narrator reacts to\",\n  // Systems and rules\n  \"a system functioning exactly as intended producing wrong outcomes\",\n  \"a rule that cannot be broken no matter how irrational\",\n  \"a routine that punishes deviation in small imperceptible ways\",\n  \"errors are logged but never corrected\",\n  \"written rules contradict spoken ones — both enforced\",\n  \"compliance consistently creates worse outcomes than resistance\",\n  \"a process completes itself without user input\",\n  \"help requires surrendering autonomy\",\n  \"silence is treated as participation\",\n  \"refusal is interpreted as consent\",\n  \"the system improves measurably after harm occurs\",\n  \"records exist for events no one recalls\",\n  \"forms require information that doesn't exist yet\",\n  \"the procedure for stopping something requires completing it first\",\n  // Time and causality\n  \"time behaving inconsistently — not dramatically\",\n  \"effects consistently precede causes by small margins\",\n  \"gaps in time noticed only through consequences not the gaps themselves\",\n  \"the same conversation happens with slight variation\",\n  \"days repeat with small differences no one names\",\n  \"predestination — every action was already recorded\",\n  // Space and objects\n  \"rooms are dimensionally wrong but fully functional\",\n  \"objects return to approximate positions\",\n  \"a space subtly resists being altered\",\n  \"doors open onto wrong rooms — different each time\",\n  \"a building has more floors inside than outside\",\n  \"objects are present that no one placed there\",\n  \"objects disappear but are never acknowledged as missing\",\n  \"a subtle physical change in the environment accumulates\",\n  // Information and perception\n  \"missing or erased information with no explanation\",\n  \"the narrator stops recognizing familiar things\",\n  \"internal thoughts no longer match actions\",\n  \"photographs show things slightly different from memory\",\n  \"written language begins to mean something else\",\n  \"the narrator's own handwriting is unrecognizable\",\n  \"sounds arrive from directions they shouldn't\",\n  \"a smell that has no source but intensifies in specific rooms\",\n  // Social\n  \"concern is framed as selfishness\",\n  \"deviation triggers quiet escalation with no named cause\",\n  \"care is conditional on compliance\",\n  \"observation changes outcomes\",\n  \"everyone is kind in a way that forecloses refusal\",\n  \"social pressure so gradual it was never a single decision\",\n  \"the wrongness is statistically insignificant — provable\",\n  \"repetition occurs with unsettling variation no one names\"\n];\n\nconst finalMoves = [\n  \"the narrator completes the task anyway\",\n  \"the narrator writes their own name on something\",\n  \"the narrator puts the object back exactly where it was\",\n  \"the narrator marks a date to come back and check\",\n  \"the narrator does what the note instructed\",\n  \"the narrator begins doing the same thing to someone else\",\n  \"the narrator files it correctly and throws nothing away\",\n  \"the narrator keeps waiting\",\n  \"the narrator locks up and leaves as though nothing happened\",\n  \"the narrator adds one more item to the list\"\n];\n\nconst pick = a => a[Math.floor(Math.random() * a.length)];\n\n// Measured at 3.72 words/second across stories 4-36 (edge-tts, RATE=+40%).\n// 160 words is about 43 seconds of narration.\nconst TARGET_WORDS = 160;\n\n// Asking for a single number lands within a few percent. Asking for a RANGE\n// (\"150-170 words\") made it undershoot to ~86%. Keep the exact number.\nconst ASK_WORDS = Math.round(TARGET_WORDS * 1.0);\n\nreturn [{ json: { decisions: {\n  setting:      pick(settings),\n  wrongness:    pick(wrongnessSources),\n  final_move:   pick(finalMoves),\n  target_words: TARGET_WORDS,\n  ask_words:    ASK_WORDS\n} } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "715f8170-850b-4344-bbe3-628100659d87",
+      "name": "Randomizer"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "qwen2.5-14b-instruct",
+          "mode": "list",
+          "cachedResultName": "QWEN2.5-14B-INSTRUCT"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You write 45-second horror monologues for narrated video. First person, present tense, one continuous scene. You open on a concrete disturbing fact, never on atmosphere. You never tell the listener what to feel. You never summarise time passing. Every sentence is something seen, heard, or done."
+            },
+            {
+              "role": "user",
+              "content": "Write one horror monologue of 160 words, in exactly the style of the example.\n\nSTYLE THE EXAMPLE DEMONSTRATES - match every point:\n- Sentence one states a specific, checkable, impossible fact. No weather, no mood, no \"I felt\".\n- First person, present tense, one continuous scene in real time.\n- The narrator handles ordinary physical objects and describes them plainly.\n- Short declarative sentences. Concrete nouns. No metaphor, no simile. Never write \"as if\".\n- Nothing supernatural is ever seen. No blood, no ghosts, no whispers, no figures in the dark.\n- The last two sentences show a decision, as a physical action. Never state the reason for it.\n\nYOUR STORY:\nSETTING: a ground-floor apartment\nTHE IMPOSSIBLE FACT: a food delivery arrives that was never ordered\nTHE FINAL ACTION: the narrator does what the note instructed\n\nOutput only the monologue. One paragraph, no title."
+            },
+            {
+              "role": "assistant",
+              "content": "The delivery app says my order was completed at 2:14 a.m. I did not order anything, and I was asleep at 2:14. I check the door anyway. There is a paper bag on the mat, still warm, my name on the receipt above the line CUSTOMER PREFERS NO CONTACT. I bring it inside and set it on the counter. Inside is a container of soup, a plastic spoon, and a napkin folded into quarters. I unfold the napkin. It is a list, handwritten, of everything I have eaten this week. Tuesday's noodles. The two coffees on Thursday. The apple I did not finish. At the bottom, under today's date, someone has written soup, and drawn a small empty box beside it. I stand at the counter holding the napkin. Then I pick up the spoon, because the box is not checked yet, and I want to see what happens if it stays that way."
+            },
+            {
+              "role": "user",
+              "content": "=Write one horror monologue of {{ $json.decisions.ask_words }} words, in exactly the style of the example.\n\nSTYLE THE EXAMPLE DEMONSTRATES - match every point:\n- Sentence one states a specific, checkable, impossible fact. No weather, no mood, no \"I felt\".\n- First person, present tense, one continuous scene in real time.\n- The narrator handles ordinary physical objects and describes them plainly.\n- Short declarative sentences. Concrete nouns. No metaphor, no simile. Never write \"as if\".\n- Nothing supernatural is ever seen. No blood, no ghosts, no whispers, no figures in the dark.\n- The last two sentences show a decision, as a physical action. Never state the reason for it.\n\nYOUR STORY:\nSETTING: {{ $json.decisions.setting }}\nTHE IMPOSSIBLE FACT: {{ $json.decisions.wrongness }}\nTHE FINAL ACTION: {{ $json.decisions.final_move }}\n\nOutput only the monologue. One paragraph, no title."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 400,
+          "temperature": 0.95
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        448,
+        0
+      ],
+      "id": "35238ead-aa48-4ace-9cb2-dddf08176f78",
+      "name": "Write Story",
+      "credentials": {
+        "openAiApi": {
+          "id": "JCfXlzmwWXSikEm9",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Clean the model output and re-emit it in the shape the parent workflow reads\n// ($json.output[0].content[0].text), so ContentGeneration3.0 needs no change.\n\nlet text = $json.output?.[0]?.content?.[0]?.text;\nif (!text) throw new Error(\"No model output at output[0].content[0].text\");\n\ntext = text.trim();\n\n// Strip markdown fences and any wrapping quotes\ntext = text.replace(/^```[a-z]*\\s*/i, \"\").replace(/\\s*```$/, \"\").trim();\nif (/^[\"'\\u201c].*[\"'\\u201d]$/s.test(text)) text = text.slice(1, -1).trim();\n\n// Strip a leading preamble line (\"Here is your story:\", \"Certainly!\", a title)\nconst lines = text.split(\"\\n\");\nif (lines.length > 1 && /^(here|sure|certainly|okay|of course|title)\\b/i.test(lines[0].trim())) {\n  lines.shift();\n  text = lines.join(\"\\n\").trim();\n}\n\n// Normalise typography. Smart quotes and dashes reach edge-tts and the ASS\n// subtitle file; ASCII is safer in both.\ntext = text\n  .replace(/[\\u2018\\u2019\\u201b]/g, \"'\")\n  .replace(/[\\u201c\\u201d]/g, '\"')\n  .replace(/[\\u2013\\u2014]/g, \" - \")\n  .replace(/\\u2026/g, \"...\")\n  .replace(/[ \\t]+/g, \" \")\n  .replace(/\\n{2,}/g, \"\\n\\n\")\n  .trim();\n\nconst words = text.split(/\\s+/).filter(Boolean).length;\n\n// Surfaced for debugging, not enforced. A hard retry loop is not worth the extra\n// generation time when 120-200 words is 32-54 seconds either way.\nconst flagged = [\"chill\", \"spine\", \"dread\", \"eerie\", \"unsettling\", \"realized\", \"realised\",\n   \"as if\", \"wrong\", \"seemed\", \"somehow\"]\n  .filter(w => new RegExp(\"\\\\b\" + w, \"i\").test(text));\n\nreturn [{ json: {\n  output: [{ content: [{ text }] }],   // parent-compatible shape\n  wordCount: words,\n  estimatedSeconds: +(words / 3.72).toFixed(1),\n  flaggedWords: flagged,\n  brief: $('Randomizer').item.json.decisions\n} }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        0
+      ],
+      "id": "0303f4ee-455f-4be3-a1c5-eff42b2910eb",
+      "name": "Clean and Measure"
+    },
+    {
+      "parameters": {
+        "content": "## One call, not five\n\nThe old chain was outline -> opening -> draft -> ending -> revise.\nFive passes on a 14B model compounded drift, and the draft node was told to\n\"stop before the final paragraph\" - which a model cannot do - so it ran into\nits 550 token cap and got sliced mid-sentence. The ending was then glued onto\nthe fragment.\n\nThis version teaches the style with one worked example instead of a rule list,\nbecause qwen2.5-14b ignores negative constraints. Tested directly: told not to\nuse \"realized\" or \"chill\", it used both. Shown an example, it matched it.",
+        "height": 280,
+        "width": 470,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        140,
+        200
+      ],
+      "id": "50e26ef0-9404-47a2-acca-77d24959c403",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Length\n\n160 words is about 43 seconds at RATE=+40%\n(3.72 words/sec, measured across stories 4-36).\n\nChange TARGET_WORDS in the Randomizer to retarget:\n  110 words = 30s\n  160 words = 43s\n  220 words = 60s",
+        "height": 280,
+        "width": 320,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        640,
+        200
+      ],
+      "id": "c339c53b-cc10-47dd-9da5-55046e8c9003",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Randomizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Randomizer": {
+      "main": [
+        [
+          {
+            "node": "Write Story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Story": {
+      "main": [
+        [
+          {
+            "node": "Clean and Measure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean and Measure": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "99760253acafc950b45bca9d40f879d0c42df29fd78f9c11e457ea708e011beb"
+  },
+  "tags": []
+}
