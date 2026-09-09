@@ -1,0 +1,647 @@
+{
+  "name": "PublishingContent3.0",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "27034760-25af-48d4-a781-d417cf364624",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "b87a24c9-21e1-4583-ae32-03f3e846045e",
+              "name": "hook",
+              "value": "={{ $json.hook }}",
+              "type": "string"
+            },
+            {
+              "id": "073e52e4-42e0-4c9b-921c-2a94abd2d918",
+              "name": "caption_instagram",
+              "value": "={{ $json.caption_instagram }}",
+              "type": "string"
+            },
+            {
+              "id": "e62bdcf9-92c6-4b78-baa6-27b9ef1892f0",
+              "name": "caption_tiktok",
+              "value": "={{ $json.caption_tiktok }}",
+              "type": "string"
+            },
+            {
+              "id": "be747fb8-0621-4cfd-a470-611079378c98",
+              "name": "caption_youtube",
+              "value": "={{ $json.caption_youtube }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -656,
+        32
+      ],
+      "id": "54229783-808a-4012-8d3d-cc688c43836d",
+      "name": "Metadata Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  item.json.ytBody = {\n    snippet: {\n      title: item.json.title + ': ' + item.json.hook + ' #shorts',\n      description: item.json.caption_youtube + '\\n\\n#shorts',\n      tags: [\n        \"shorts\",\"ytshorts\",\"horrorstories\",\"scary\",\"horrorshorts\",\n        \"creepystories\",\"watchtilltheend\",\"disturbing\",\"paranormal\",\"dontwatchalone\"\n      ],\n      categoryId: 24\n    },\n    status: {\n      privacyStatus: \"private\",\n      selfDeclaredMadeForKids: false\n    }\n  };\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        -48
+      ],
+      "id": "79bb3a11-56a9-4d9c-af8e-20958ec2b608",
+      "name": "Build YouTube Body"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Story Paths').item.json.metadataPath }}",
+        "options": {
+          "dataPropertyName": "metadata"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -1504,
+        -48
+      ],
+      "id": "dc3efa43-f017-4ff5-a6ab-040165c867d2",
+      "name": "Read Metadata File"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  if (typeof item.json.metadata !== \"string\") {\n    throw new Error(\"Expected item.json.metadata to be a JSON string\");\n  }\n\n  let parsed;\n  try {\n    parsed = JSON.parse(item.json.metadata);\n  } catch (e) {\n    throw new Error(\n      `Failed to parse metadata JSON string: ${e.message}\\n` +\n      `Value: ${item.json.metadata.slice(0, 300)}`\n    );\n  }\n\n  // Flatten fields so Set node can use them easily\n  return {\n    json: {\n      title: parsed.title ?? \"\",\n      hook: parsed.hook ?? \"\",\n      caption_instagram: parsed.caption_instagram ?? \"\",\n      caption_tiktok: parsed.caption_tiktok ?? \"\",\n      caption_youtube: parsed.caption_youtube ?? \"\",\n      fileBase: parsed.path ?? \"\"\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1056,
+        -48
+      ],
+      "id": "2f61fe9d-b72c-4e31-868a-2506ccfe4299",
+      "name": "Parse Metadata"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "metadata",
+        "destinationKey": "metadata",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -1280,
+        -48
+      ],
+      "id": "32272d4e-dda0-4c3b-8825-ec1e32752588",
+      "name": "Metadata to Text"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "includeUnpaired": true
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -240,
+        -48
+      ],
+      "id": "5d9df53f-4996-4673-a31d-8038f1a2b68f",
+      "name": "Merge Video + Metadata"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.headers.location }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "video/mp4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "Horrorvideo",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        720,
+        -64
+      ],
+      "id": "d6fb1eb7-e203-4208-8ccf-a977c6bd5e8a",
+      "name": "Upload Video Bytes",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "HrbtSRDdv1Y1m8Jr",
+          "name": "YouTube account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "includeUnpaired": true
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        272,
+        -64
+      ],
+      "id": "50b5004f-fee6-4fe8-bd98-fc2c7f374efa",
+      "name": "Merge Upload Session"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  const b = item.binary?.Horrorvideo;\n\n  if (!b) {\n    throw new Error('FinalVideo binary missing');\n  }\n\n  // Force-correct the binary metadata\n  item.binary = {\n    Horrorvideo: {\n      ...b,\n      mimeType: 'video/mp4',\n      fileType: 'video/mp4',\n      fileExtension: 'mp4',\n    }\n  };\n\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        -64
+      ],
+      "id": "847011e3-5c54-4b27-a710-8eb9672db75e",
+      "name": "Fix Video MIME"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Upload-Content-Type",
+              "value": "video/mp4"
+            },
+            {
+              "name": "X-Upload-Content-Length",
+              "value": "={{ $json.fileSize }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=UTF-8"
+            },
+            {}
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "snippet",
+              "value": "={{ $json.ytBody.snippet }}"
+            },
+            {
+              "name": "status",
+              "value": "={{ $json.ytBody.status }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        64,
+        -144
+      ],
+      "id": "222d75f6-f1d8-4c32-9cd8-a3b31764bbe4",
+      "name": "Start Resumable Upload",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "HrbtSRDdv1Y1m8Jr",
+          "name": "YouTube account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Story Paths').item.json.videoPath }}",
+        "options": {
+          "dataPropertyName": "Horrorvideo"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -560,
+        -160
+      ],
+      "id": "e83ec4f6-af86-4d16-9efa-59c48ec979bd",
+      "name": "Read Video File"
+    },
+    {
+      "parameters": {
+        "sendTo": "slimey.ninja2024@gmail.com",
+        "subject": "Completed video",
+        "message": "={{ 'Uploaded new video: https://www.youtube.com/shorts/' + $json.id + '\\nTitle: ' + $json.snippet.title }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1136,
+        -64
+      ],
+      "id": "952c71ee-b27e-43a5-b6a3-a7a45afd1cd4",
+      "name": "Email Success",
+      "webhookId": "0991ac17-cada-4617-ae77-50d0373f245d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "S0wDGIZfHsSLdOKF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "update",
+        "videoId": "={{ $json.id }}",
+        "title": "={{ $('Metadata Fields').item.json.title }}",
+        "regionCode": "US",
+        "categoryId": "={{ $json.snippet.categoryId }}",
+        "updateFields": {
+          "description": "={{ $('Fix Video MIME').item.json.caption_youtube + '\\n\\n' + $('Fix Video MIME').item.json.ytBody.snippet.tags.join(' ') + '\\n\\nMusic Credit - \\nComposer: Toby Fox\\nCCA: Materia Music Publishing\\nVideo: https://www.youtube.com/watch?v=jNrJT6lL9J4\\n\\nBackground Video Credit: https://www.youtube.com/watch?v=Lt-k-1eD5bE&t=33s' }}",
+          "privacyStatus": "public",
+          "tags": "creepystories,disturbing,dontwatchalone,horrorshorts,horrorstories,paranormal,scary,shorts,watchtilltheend,ytshorts"
+        }
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        944,
+        -64
+      ],
+      "id": "a14cde61-7669-4c69-87ad-55df083ca018",
+      "name": "Update a video",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "HrbtSRDdv1Y1m8Jr",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "powershell -Command \"Remove-Item 'C:\\Users\\Thomas M\\Desktop\\InstagramContent\\HorrorStories\\generate_lock.lock' -ErrorAction SilentlyContinue\"\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -752,
+        -160
+      ],
+      "id": "84dd8b28-130a-4321-92b1-0cc3d951e7d7",
+      "name": "Release Lock",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "render-complete",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -2400,
+        -48
+      ],
+      "id": "a6596c11-978f-4acb-922b-775db54009b3",
+      "name": "Render Complete",
+      "webhookId": "eafadfdd-6fcb-4363-9239-5a54a5817e40"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5fc96cec-488d-49c1-a297-4c37fc053f5e",
+              "name": "storyFileName",
+              "type": "string",
+              "value": "={{ ($json.body.story_file_name || ('HorrorStory' + $json.body.story_number)) }}"
+            },
+            {
+              "id": "6cfdad7a-3800-4996-82fe-79840475e814",
+              "name": "metadataPath",
+              "type": "string",
+              "value": "={{ $json.body.metadata_path || ('C:/Users/Thomas M/Desktop/InstagramContent/Metadata/' + ($json.body.story_file_name || ('HorrorStory' + $json.body.story_number)) + '_metadata.json') }}"
+            },
+            {
+              "id": "99aa8aad-f0f5-462d-bd25-892a53acaf5f",
+              "name": "videoPath",
+              "type": "string",
+              "value": "={{ $json.body.video_path || ('C:/Users/Thomas M/Desktop/InstagramContent/HorrorVideos/' + ($json.body.story_file_name || ('HorrorStory' + $json.body.story_number)) + '.mp4') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2176,
+        -48
+      ],
+      "id": "e735c488-3f2f-4158-abc4-15fd4c89e0de",
+      "name": "Story Paths"
+    },
+    {
+      "parameters": {
+        "sendTo": "slimey.ninja2024@gmail.com",
+        "subject": "=Publish FAILED - {{ $('Story Paths').item.json.storyFileName }}",
+        "message": "={{ 'Publishing failed for ' + $('Story Paths').item.json.storyFileName + '\\n\\nError: ' + ($json.error?.message || JSON.stringify($json.error)) + '\\n\\nThe video is on disk and the lock has been released.\\nRe-publish by POSTing story_number to /webhook/render-complete.' }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        208
+      ],
+      "id": "e82da882-db25-4f25-8e25-3fd776f04442",
+      "name": "Email Failure",
+      "webhookId": "d1d3d324-dd98-4b96-b461-678d3046e640",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "S0wDGIZfHsSLdOKF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Webhook contract\n\npipeline/generateContent.py POSTs here after a render finishes:\n\n```\n{ story_number, story_file_name,\n  video_path, metadata_path,\n  duration_seconds, render_seconds }\n```\n\nConfigured as N8N_RENDER_WEBHOOK in .env.\n\nStory Paths falls back to building the paths from story_number, so a\nhand-fired {\"story_number\": 36} still publishes.\n\n**This workflow must be ACTIVE** or the production webhook is not registered.",
+        "height": 360,
+        "width": 540,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2470,
+        130
+      ],
+      "id": "cfea1411-3400-434c-95b4-9c86a77b4ca0",
+      "name": "Sticky Note0"
+    },
+    {
+      "parameters": {
+        "content": "## Upload quota is the real ceiling\n\nvideos.insert costs 1,600 units against a 10,000/day default:\nabout **6 uploads per day**.\n\nThe 50-minute cron in ContentGeneration attempts ~28, so most runs 403 on\nquota. That is why both HTTP nodes have an error output routed to\nEmail Failure rather than ending the execution silently.\n\nDo not raise the cron rate to match the faster render.",
+        "height": 320,
+        "width": 470,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        130,
+        208
+      ],
+      "id": "e811f0a8-44ff-413a-8b02-63b3144b39a1",
+      "name": "Sticky Note1"
+    }
+  ],
+  "connections": {
+    "Render Complete": {
+      "main": [
+        [
+          {
+            "node": "Story Paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Story Paths": {
+      "main": [
+        [
+          {
+            "node": "Read Metadata File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Metadata File": {
+      "main": [
+        [
+          {
+            "node": "Metadata to Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Metadata to Text": {
+      "main": [
+        [
+          {
+            "node": "Parse Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Metadata": {
+      "main": [
+        [
+          {
+            "node": "Metadata Fields",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Release Lock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Metadata Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge Video + Metadata",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Release Lock": {
+      "main": [
+        [
+          {
+            "node": "Read Video File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Video File": {
+      "main": [
+        [
+          {
+            "node": "Merge Video + Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Video + Metadata": {
+      "main": [
+        [
+          {
+            "node": "Build YouTube Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build YouTube Body": {
+      "main": [
+        [
+          {
+            "node": "Start Resumable Upload",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Upload Session",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Start Resumable Upload": {
+      "main": [
+        [
+          {
+            "node": "Merge Upload Session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Upload Session": {
+      "main": [
+        [
+          {
+            "node": "Fix Video MIME",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fix Video MIME": {
+      "main": [
+        [
+          {
+            "node": "Upload Video Bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Video Bytes": {
+      "main": [
+        [
+          {
+            "node": "Update a video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a video": {
+      "main": [
+        [
+          {
+            "node": "Email Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "99760253acafc950b45bca9d40f879d0c42df29fd78f9c11e457ea708e011beb"
+  },
+  "id": "rw9VgMwXpq298xl9",
+  "tags": []
+}

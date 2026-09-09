@@ -315,6 +315,7 @@ elif webhook:
             "story_number": story_number,
             "story_file_name": f"HorrorStory{story_number}",
             "video_path": str(output_path),
+            "metadata_path": str(paths.METADATA / f"HorrorStory{story_number}_metadata.json"),
             "duration_seconds": round(audio_duration, 2),
             "render_seconds": round(render_time, 2),
         }).encode("utf-8")

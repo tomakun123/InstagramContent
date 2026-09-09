@@ -12,7 +12,7 @@ handles media. They coordinate through shared files plus one webhook.
 | Piece | What it does |
 |---|---|
 | **LM Studio** (`:1234`) | Serves `qwen2.5-14b-instruct` behind an OpenAI-compatible API. Both n8n LLM nodes point at it. |
-| **n8n** (`:5678`) | Orchestration. Three workflows: `ContentGenerate2.0`, `PublishingContent2.0`, `PromptHorrorGeneration`. |
+| **n8n** (`:5678`) | Orchestration. Three workflows: `ContentGeneration3.0`, `PublishingContent3.0`, `PromptHorrorGeneration`. |
 | **cloudflared** | Named tunnel exposing n8n on a subdomain, so platform APIs can reach the OAuth callbacks. |
 | **`pipeline/storyWatcher.py`** | Watches `Metadata/`. A new JSON there means "a story is ready" and triggers the render. |
 | **`pipeline/generateContent.py`** | TTS → music mix → ffmpeg render, in one pass. ~17 seconds per video. |
@@ -50,15 +50,23 @@ Schedule Trigger (every 50 min)  /  manual "Execute workflow"
                                            4. write .part.mp4, rename -> .mp4
                                            5. POST N8N_RENDER_WEBHOOK  ★ DONE SIGNAL
                                                    │
-   PublishingContent2.0  (Webhook trigger, /webhook/render-complete)
-        ├─ story name comes from the POST body, not from counter.txt
-        ├─ read Metadata/HorrorStory{n}_metadata.json
-        ├─ DELETE generate_lock.lock          ← releases the mutex for the next cycle
-        ├─ read HorrorVideos/HorrorStory{n}.mp4
-        ├─ POST  googleapis resumable upload session
-        ├─ PUT   the video bytes
-        ├─ YouTube "Update a video" -> real title, description, tags, public
-        └─ Gmail confirmation with the /shorts/{id} link
+   PublishingContent3.0  (Webhook trigger, /webhook/render-complete)
+        ├─ Story Paths        ← story name and both file paths come from the POST
+        │                        body; counter.txt is never re-read
+        ├─ Read Metadata File / Metadata to Text / Parse Metadata
+        ├─ Release Lock       ← deletes generate_lock.lock, before the upload, so
+        │                        the mutex is freed even if publishing fails
+        ├─ Read Video File
+        ├─ Start Resumable Upload  (POST googleapis session)   ──error─┐
+        ├─ Upload Video Bytes      (PUT the bytes)             ──error─┤
+        ├─ Update a video     → real title, description, tags, public     │
+        ├─ Email Success      → Gmail with the /shorts/{id} link           │
+        └─ Email Failure      ←──────────────────────────────────┘
+
+Both HTTP nodes use `onError: continueErrorOutput`. `videos.insert` costs 1,600
+quota units against a 10,000/day default — roughly six uploads a day — so a 403
+on quota is the expected failure, not an exceptional one. It now produces an
+email instead of an execution that simply stops.
 ```
 
 ## Synchronisation contracts
@@ -68,8 +76,8 @@ Schedule Trigger (every 50 min)  /  manual "Execute workflow"
 | `HorrorStories/counter.txt` | ContentGenerate, **after** the story file is written | ContentGenerate, `generateContent.py` | The story number. Every filename derives from it. |
 | `Metadata/HorrorStory{n}_metadata.json` | ContentGenerate | `storyWatcher.py`, PublishingContent | Trigger for the render, and the caption source for upload. |
 | `HorrorVideos/HorrorStory{n}.part.mp4` → `.mp4` | `generateContent.py` (atomic rename) | nothing polls it | The rename is atomic, so a partial file is never observed. |
-| `POST /webhook/render-complete` | `generateContent.py`, after a successful render | PublishingContent2.0 | "Render finished, publish story n." Replaces the old 25-minute blind wait. |
-| `HorrorStories/generate_lock.lock` | ContentGenerate creates | ContentGenerate checks, **PublishingContent deletes** | Mutex. Stops the cron starting a second run while one is still in flight. |
+| `POST /webhook/render-complete` | `generateContent.py`, after a successful render | PublishingContent3.0 | "Render finished, publish story n." Replaces the old 25-minute blind wait. |
+| `HorrorStories/generate_lock.lock` | ContentGenerate creates | ContentGenerate checks, **PublishingContent's Release Lock deletes** | Mutex. Stops the cron starting a second run while one is still in flight. |
 
 The lock being released by the *publish* workflow rather than the generate workflow
 is deliberate: the gate stays shut for the entire generate → render → publish
