@@ -1,0 +1,848 @@
+{
+  "name": "ContentGeneration3.0",
+  "nodes": [
+    {
+      "parameters": {
+        "fileSelector": "C:\\Users\\Thomas M\\Desktop\\InstagramContent\\HorrorStories\\counter.txt",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -320,
+        576
+      ],
+      "id": "10e01d02-1072-4b5c-976f-07c0725c23a8",
+      "name": "readCounter.txt"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "destinationKey": "counterValue",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -96,
+        576
+      ],
+      "id": "e3cc9254-c636-4248-99c8-1eeb5afe33c2",
+      "name": "Extract from File(Counter)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0762f82b-5765-4346-a730-39baf9dfe10a",
+              "name": "storyNum",
+              "value": "={{ parseInt($json.counterValue)+1 }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        128,
+        576
+      ],
+      "id": "dad1abf3-3391-48f5-bbdb-cdee2033dca5",
+      "name": "Compute Primitives"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7933de3f-6ec9-4d79-8dce-14ffe988c305",
+              "name": "storyFileName",
+              "value": "={{ 'HorrorStory' + $json.storyNum }}",
+              "type": "string"
+            },
+            {
+              "id": "6a6eda4d-4a49-4194-bd5b-c24237d05342",
+              "name": "newCounterValue",
+              "value": "={{ parseInt($json.storyNum, 10) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        352,
+        576
+      ],
+      "id": "7e232aa1-553a-4ef1-82d8-9b5353b47882",
+      "name": "Build Dependent Fields"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "newCounterValue",
+        "binaryPropertyName": "newCounterValue",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        800,
+        912
+      ],
+      "id": "b5875075-5cb6-43d8-9c84-5fd9f8b3ef2b",
+      "name": "Pull New Counter Value"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=C:\\Users\\Thomas M\\Desktop\\InstagramContent\\HorrorStories\\counter.txt",
+        "dataPropertyName": "newCounterValue",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        1024,
+        912
+      ],
+      "id": "a3b6ee9d-6264-4112-8bb9-c07241995e79",
+      "name": "Update Counter File"
+    },
+    {
+      "parameters": {
+        "content": "## Lock check\nOnly one run at a time. If the lock exists, delete it and stop -\nthe next tick then runs cleanly. PublishingContent releases it.",
+        "height": 130,
+        "width": 430,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1010,
+        200
+      ],
+      "id": "1f8017e4-94d2-4016-9554-dac01f1e6d5b",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ 'C:/Users/Thomas M/Desktop/InstagramContent/HorrorStories/' + $('Build Dependent Fields').item.json.storyFileName+'.txt' }}",
+        "dataPropertyName": "HorrorStory",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        352,
+        912
+      ],
+      "id": "b98dea35-cf93-4265-a135-a20d443bfd13",
+      "name": "Write Horror Story to vscode"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8e78eb1a-e253-422b-86f0-af13330673fc",
+              "name": "Story",
+              "value": "={{ $json.output[0].content[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -96,
+        912
+      ],
+      "id": "d0a11514-792d-4f6e-a9eb-61ad0f357aad",
+      "name": "Set Story Value"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "Story",
+        "binaryPropertyName": "HorrorStory",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        128,
+        912
+      ],
+      "id": "61a14d90-62a9-4788-9c73-4096bbe6252b",
+      "name": "Create txt File from Story"
+    },
+    {
+      "parameters": {
+        "content": "## Reserve a story number\nRead counter.txt and compute n+1, but do NOT write it back yet.",
+        "height": 100,
+        "width": 700,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -330,
+        460
+      ],
+      "id": "8e664e08-2fab-4379-908c-9af05a259a21",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Generate + commit\nStory is written FIRST, then counter.txt is updated.\nA run that dies in the LLM no longer burns a story number.",
+        "height": 110,
+        "width": 700,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -330,
+        790
+      ],
+      "id": "326b98d6-0992-41e5-bd36-93e7fbacfff5",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "qwen2.5-14b-instruct",
+          "mode": "list",
+          "cachedResultName": "QWEN2.5-14B-INSTRUCT"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=You are writing metadata for short-form horror videos.\n\nGiven the story below, produce:\n\n1) ONE punchy TITLE (max 55 characters).\n2) ONE short HOOK sentence to display as the first subtitle line (max 12 words).\n3) An Instagram Reels caption:\n   - 1–2 sentences\n   - 6–10 relevant hashtags\n4) A TikTok caption:\n   - 1–2 sentences\n   - casual, storytime tone\n   - 4–8 hashtags\n5) A YouTube Shorts caption:\n   - 1–2 sentences\n   - minimal hashtags (2–4), may include #shorts\n\nRules:\n- Make it intriguing, not clickbait.\n- No explicit gore, no slurs.\n- Keep hashtags relevant to horror, mystery, and storytelling.\n- Do NOT repeat hashtags excessively across platforms.\n\nReturn JSON exactly in this schema (match EXACTLY):\n\n{\n  \"title\": \"...\",\n  \"hook\": \"...\",\n  \"captions\": {\n    \"instagram\": \"...\",\n    \"tiktok\": \"...\",\n    \"youtube\": \"...\"\n  }\n}\n\nSTORY:\n{{ $('Set Story Value').item.json.Story }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        -320,
+        1248
+      ],
+      "id": "eb7e73ea-2294-4a89-a69b-84d1299026c0",
+      "name": "Generate Metadata",
+      "credentials": {
+        "openAiApi": {
+          "id": "JCfXlzmwWXSikEm9",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "62a395fb-9b0f-4145-9444-a7aaafe8d416",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "9cdf6f17-ed58-4516-a025-baffa89258de",
+              "name": "hook",
+              "value": "={{ $json.hook }}",
+              "type": "string"
+            },
+            {
+              "id": "49e27d0f-15fb-4625-b1e2-64c4f6ac51c1",
+              "name": "caption_instagram",
+              "value": "={{ $json.captions.instagram }}",
+              "type": "string"
+            },
+            {
+              "id": "bce81c47-4bc7-423b-9358-59c2666fe621",
+              "name": "caption_tiktok",
+              "value": "={{ $json.captions.tiktok }}",
+              "type": "string"
+            },
+            {
+              "id": "4516746e-9c44-4b62-9f86-2c421842c6c3",
+              "name": "caption_youtube",
+              "value": "={{ $json.captions.youtube }}",
+              "type": "string"
+            },
+            {
+              "id": "3fb25d61-3b17-4337-bef6-d8b239622c1e",
+              "name": "PATH",
+              "value": "={{ $('Build Dependent Fields').item.json.storyFileName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        128,
+        1248
+      ],
+      "id": "26949cdb-23aa-4684-acce-db95cbfc21a0",
+      "name": "Set Metadata"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Grab the JSON string the model returned\nconst raw = $json.output?.[0]?.content?.[0]?.text;\n\nif (!raw) {\n  throw new Error(\"No model output found at output[0].content[0].text\");\n}\n\n// Parse it\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n} catch (e) {\n  throw new Error(\"Model output was not valid JSON:\\n\" + raw);\n}\n\n// Return parsed fields into $json\nreturn [{\n  json: {\n    title: parsed.title,\n    hook: parsed.hook,\n    captions: parsed.captions,\n    // keep original too if you want:\n    raw,\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        1248
+      ],
+      "id": "e2b66c3b-3bf9-45ee-bfe9-5242ca1d9250",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "775c4b3c-e04f-40b2-8e3f-c769460873a5",
+              "name": "metadata",
+              "value": "={{ JSON.stringify({ title: $json.title, hook: $json.hook, caption_instagram: $json.caption_instagram, caption_tiktok: $json.caption_tiktok, caption_youtube: $json.caption_youtube, path: $json.PATH }, null, 2) }}\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        352,
+        1248
+      ],
+      "id": "38576c39-edb5-401b-9dec-fd3e3a04636f",
+      "name": "One variable"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "=metadata",
+        "binaryPropertyName": "=metadata",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        576,
+        1248
+      ],
+      "id": "9b7c5640-0959-4602-8d3e-451aa909b92b",
+      "name": "Convert to TextFile"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ 'C:/Users/Thomas M/Desktop/InstagramContent/Metadata/' + $('Build Dependent Fields').item.json.storyFileName + '_metadata.json' }}",
+        "dataPropertyName": "=metadata",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        800,
+        1248
+      ],
+      "id": "75bfdb81-ad01-424f-a08a-00b9e176e3c7",
+      "name": "Write Metadata into vscode"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 50
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1280,
+        576
+      ],
+      "id": "55ee019c-8029-4182-8e69-186e669c8f2d",
+      "name": "Schedule Trigger",
+      "executeOnce": true,
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "content": "## Metadata -> handoff\nWriting the metadata JSON is the last step. storyWatcher.py sees\nit, renders the video, then POSTs /webhook/render-complete to\ntrigger PublishingContent. No Wait node, no polling.",
+        "height": 120,
+        "width": 700,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -330,
+        1120
+      ],
+      "id": "8e4b7f18-9b9e-4909-bb62-73e1536a0e0d",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "fileSelector": "C:\\Users\\Thomas M\\Desktop\\InstagramContent\\HorrorStories\\generate_lock.lock",
+        "options": {
+          "dataPropertyName": "lock"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -992,
+        448
+      ],
+      "id": "bd60a89d-4627-4f15-936e-d4c2b8070df7",
+      "name": "Read/Write Files from Disk",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "17821691-867b-4659-bc2e-e700c62feae0",
+              "leftValue": "={{ $json.fileName }}",
+              "rightValue": "generate_lock.lock",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -768,
+        448
+      ],
+      "id": "98ecda36-d542-459a-9efb-e1efcc9a4975",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Lock system been found, don't start this execution"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        336
+      ],
+      "id": "defc706e-9938-40c5-8886-96175cf389f7",
+      "name": "Stop and Error"
+    },
+    {
+      "parameters": {
+        "command": "powershell -Command \"Remove-Item 'C:\\Users\\Thomas M\\Desktop\\InstagramContent\\HorrorStories\\generate_lock.lock' -ErrorAction SilentlyContinue\"\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -544,
+        336
+      ],
+      "id": "d9fee5c7-3fc6-4f16-86aa-09c713439445",
+      "name": "Execute Command1",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "command": "powershell -NoProfile -Command \"New-Item -ItemType File -Force -Path 'C:\\Users\\Thomas M\\Desktop\\InstagramContent\\HorrorStories\\generate_lock.lock' | Out-Null\"\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -544,
+        576
+      ],
+      "id": "822e2b05-a1a9-4074-9701-bcf453c65b87",
+      "name": "Execute Command2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1280,
+        336
+      ],
+      "id": "34707234-7b6a-4228-a150-7cd2ddafeee6",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "content": "### Changes from V2 ###\n- Counter is written AFTER the story file exists (was before the\n  LLM call, so every failed run burned a number - 37-42 were lost)\n- Removed Wait 25m / FINALREADPART / If / Wait1 and both\n  PublishingContent calls. The render now reports completion via\n  webhook, so publishing starts when the video is actually ready\n  instead of on a fixed timer with a 10m grace branch.\n- Manual trigger is wired up, so runs can be tested on demand.\n- Set Story Value: '= {{...}}' -> '={{...}}' (the space made every\n  story file start with a stray leading space).\n\nRequires: N8N_RENDER_WEBHOOK in .env, and PublishingContent\nswitched to a Webhook trigger on path 'render-complete'.",
+        "height": 320,
+        "width": 520,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1130,
+        560
+      ],
+      "id": "4fad7b25-a333-49f0-8068-ed4e66cfb0a2",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "3pvuJTTxuvOOkFsx",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/3pvuJTTxuvOOkFsx",
+          "cachedResultName": "PromptHorrorGeneration"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -320,
+        912
+      ],
+      "id": "a9e7fe41-21c0-472c-a284-ecc2eb9e1ccc",
+      "name": "Call 'PromptHorrorGeneration'1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c0117e11-9f3a-4f77-9d2e-5b6a0f2c31aa",
+              "name": "newCounterValue",
+              "value": "={{ $('Build Dependent Fields').item.json.newCounterValue }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        576,
+        912
+      ],
+      "id": "6e8df8d2-0afd-455b-8778-ae1b4901aa82",
+      "name": "Commit Counter"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "readCounter.txt": {
+      "main": [
+        [
+          {
+            "node": "Extract from File(Counter)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File(Counter)": {
+      "main": [
+        [
+          {
+            "node": "Compute Primitives",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Primitives": {
+      "main": [
+        [
+          {
+            "node": "Build Dependent Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Dependent Fields": {
+      "main": [
+        [
+          {
+            "node": "Call 'PromptHorrorGeneration'1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pull New Counter Value": {
+      "main": [
+        [
+          {
+            "node": "Update Counter File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Counter File": {
+      "main": [
+        [
+          {
+            "node": "Generate Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Horror Story to vscode": {
+      "main": [
+        [
+          {
+            "node": "Commit Counter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Story Value": {
+      "main": [
+        [
+          {
+            "node": "Create txt File from Story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create txt File from Story": {
+      "main": [
+        [
+          {
+            "node": "Write Horror Story to vscode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Metadata": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Metadata": {
+      "main": [
+        [
+          {
+            "node": "One variable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Set Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One variable": {
+      "main": [
+        [
+          {
+            "node": "Convert to TextFile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to TextFile": {
+      "main": [
+        [
+          {
+            "node": "Write Metadata into vscode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Metadata into vscode": {
+      "main": [
+        []
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Execute Command1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute Command2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command1": {
+      "main": [
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command2": {
+      "main": [
+        [
+          {
+            "node": "readCounter.txt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'PromptHorrorGeneration'1": {
+      "main": [
+        [
+          {
+            "node": "Set Story Value",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Commit Counter": {
+      "main": [
+        [
+          {
+            "node": "Pull New Counter Value",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "meta": {
+    "instanceId": "99760253acafc950b45bca9d40f879d0c42df29fd78f9c11e457ea708e011beb"
+  },
+  "tags": []
+}

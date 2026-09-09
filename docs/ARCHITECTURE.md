@@ -77,15 +77,24 @@ cycle, not just the generate step.
 
 ### Why a webhook rather than a timer
 
-ContentGenerate used to `Wait` 25 minutes and then check whether
-`HorrorStory{n}.part.mp4` still existed. That check never actually worked — the
-`If` node compared `'…/HorrorVideos/' + $json.fileName` against a full path, and
-`fileName` was already absolute (or undefined when the read failed), so the
-comparison never matched and publishing fired on the timer regardless of whether
-the render had finished. It only appeared to work because 19 minutes is less than
-25. A longer story would have published nothing.
+ContentGenerate used to `Wait` 25 minutes, then read `HorrorStory{n}.part.mp4`
+and branch: if the `.part` file was still there the render was ongoing, so it
+waited another 10 minutes; if the read failed the render had finished, so it
+published immediately. That logic was correct — `readWriteFile` reports
+`json.fileName` as a basename, so the `If` comparison did match.
 
-Now the render says when it is done, and says *which* story it finished.
+It was replaced because it is imprecise rather than because it was broken:
+
+- **A 25-minute floor on a 17-second render.** The wait was sized for the old
+  MoviePy renderer and dominates the whole pipeline now.
+- **Only one grace period.** A render overrunning 35 minutes would still publish
+  before the video existed.
+- **It infers success from a missing file.** A crashed render that never produced
+  a `.part` file looks exactly like a finished one, so publishing proceeds on a
+  video that is absent or stale.
+
+The webhook removes all three: the render reports when it is done, that it
+succeeded, and which story it was.
 
 ## Failure behaviour
 
