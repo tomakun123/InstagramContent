@@ -1,0 +1,331 @@
+{
+  "name": "PromptHorrorGeneration",
+  "nodes": [
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "qwen2.5-14b-instruct",
+          "mode": "list",
+          "cachedResultName": "QWEN2.5-14B-INSTRUCT"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a horror story architect. You plan stories with surgical precision. You output only the beat outline — no prose, no explanation, no commentary. You understand that horror is built through contrast, implication, and escalation — never through explicit statement."
+            },
+            {
+              "content": "=You have been given a creative brief for a horror short story. Your job is to produce a 6-beat structural outline. Each beat is 1–2 sentences maximum. This is a short story — every beat must be tight. No scene can overstay. The entire story will be 300–350 words so plan accordingly.\n\nBefore writing the beats, identify which single \nelement from the brief is the load-bearing idea — the one thing everything else exists to serve. State it in one sentence, then build every beat around it. Secondary elements exist only to reinforce the central one, never to compete with it.\n\nCREATIVE BRIEF:\n{{ $json.decisionsText }}\n\nProduce exactly these 6 beats:\n\n1. HOOK — Describe the opening situation and environment. What does normal look like here? What is the single first detail that is slightly wrong — small enough to dismiss?\n\n2. FIRST WRONGNESS — The source of wrongness ({{ $json.decisions.source_of_wrongness }}) makes itself felt for the first time in a concrete, specific way. The character notices but finds a rational explanation.\n\n3. ESCALATION — Two or three events, each slightly worse than the last. The rational explanations become harder to maintain. The character's behavior begins to shift in small ways.\n\n4. ISOLATION — The moment the last safety net is removed. No help is coming. This must feel inevitable rather than sudden — the isolation was always there, now it is simply visible.\n\n5. FAILED CONFRONTATION — The character attempts to address, escape, or name what is happening. It does not work. Be specific about why it fails — not because of external force but because of the nature of the wrongness itself.\n\n6. ENDING — What physically or behaviorally happens, consistent with this ending type: {{ $json.decisions.ending_type }}. Do not explain. Do not resolve. Show the consequence through a concrete action or image.\n\nOutput the 6 beats only, numbered. No titles, no commentary."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "77161b01-e7c6-4a20-8319-edfed7081934",
+      "name": "Node 1",
+      "credentials": {
+        "openAiApi": {
+          "id": "JCfXlzmwWXSikEm9",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const povOptions = [\n  // Standard\n  \"first-person present tense\",\n  \"first-person past tense\",\n  \"close third-person present tense\",\n  \"close third-person past tense\",\n  \"second-person present tense\",\n  \"second-person past tense\",\n  // Documentary / record-based\n  \"epistolary — letters only\",\n  \"epistolary — emails only\",\n  \"epistolary — mixed letters and emails\",\n  \"found footage transcript\",\n  \"security camera log\",\n  \"chat message transcript\",\n  \"forum thread\",\n  \"voicemail transcriptions\",\n  \"text message thread\",\n  \"medical chart notes\",\n  \"incident report\",\n  \"police report\",\n  \"maintenance log\",\n  \"complaint form responses\",\n  \"intake form\",\n  \"court deposition\",\n  \"witness testimony\",\n  \"recorded interview transcript\",\n  // Voice\n  \"instructional or procedural voice\",\n  \"collective we narration\",\n  \"unreliable first-person\",\n  \"clinical professional voice\",\n  \"retrospective confession\",\n  \"oral history narration\",\n  \"field notes\",\n  \"internal monologue only — no external action described\",\n  \"stream of consciousness\",\n  // Structural\n  \"alternating perspectives — two characters\",\n  \"alternating perspectives — three characters\",\n  \"fragmented documents only — no single narrator\",\n  \"present-tense observation — no interiority\",\n  \"second-person address to someone absent\",\n  \"narrator addressing their past self\",\n  \"narrator addressing their future self\",\n  \"obituary or eulogy voice\",\n  \"user manual or instruction guide\",\n  \"annotated document — footnotes carry the horror\",\n  \"news article\",\n  \"academic paper abstract\",\n  \"help desk ticket thread\",\n  \"automated system notifications only\",\n  \"recipe or procedural instructions hiding a narrative\"\n];\n\nconst horrorModes = [\n  // Psychological\n  \"psychological — paranoia\",\n  \"psychological — identity erosion\",\n  \"psychological — memory decay\",\n  \"psychological — dissociation\",\n  \"psychological — obsession\",\n  \"psychological — guilt made manifest\",\n  \"psychological — gaslighting\",\n  \"psychological — intrusive thoughts become real\",\n  // Social\n  \"social — consensus reality breaks down\",\n  \"social — group pressure\",\n  \"social — performative normalcy hiding violence\",\n  \"social — complicity through silence\",\n  \"social — mob logic\",\n  \"social — class horror\",\n  \"social — generational transmission of harm\",\n  // Institutional\n  \"institutional — bureaucratic nightmare\",\n  \"institutional — medical system\",\n  \"institutional — legal system\",\n  \"institutional — educational system\",\n  \"institutional — corporate structure\",\n  \"institutional — welfare or care system\",\n  \"institutional — religious institution\",\n  \"institutional — military hierarchy\",\n  // Existential\n  \"existential — cosmic indifference\",\n  \"existential — predestination\",\n  \"existential — meaninglessness of action\",\n  \"existential — time as antagonist\",\n  \"existential — scale horror — the vastness of what exists\",\n  \"existential — the body as stranger\",\n  // Body\n  \"body horror — non-gory transformation\",\n  \"body horror — loss of bodily autonomy\",\n  \"body horror — the body continuing without the self\",\n  \"body horror — sensory wrongness\",\n  \"body horror — biological dependency\",\n  // Environmental\n  \"environmental hostility — the landscape resists\",\n  \"environmental hostility — weather as antagonist\",\n  \"environmental hostility — geography that doesn't behave\",\n  \"environmental hostility — built environment turning hostile\",\n  // Technology\n  \"technological dread — surveillance\",\n  \"technological dread — automation replacing the human\",\n  \"technological dread — systems knowing too much\",\n  \"technological dread — the machine continues after the person stops\",\n  \"technological dread — digital permanence\",\n  // Other\n  \"folk horror — restrained\",\n  \"isolation — physical\",\n  \"isolation — emotional\",\n  \"isolation — social\",\n  \"moral corrosion — slow\",\n  \"moral corrosion — sudden\",\n  \"contagion — social\",\n  \"contagion — behavioral\",\n  \"contagion — ideological\",\n  \"routine distortion\",\n  \"dependency horror\",\n  \"control versus obedience\",\n  \"unseen predator — never described\",\n  \"invasion of privacy\",\n  \"care that harms\",\n  \"helpfulness as threat\"\n];\n\nconst settings = [\n  // Domestic\n  \"family home — owned\",\n  \"family home — rented\",\n  \"apartment — urban high-rise\",\n  \"apartment — old building low-rise\",\n  \"shared house — multiple tenants\",\n  \"childhood home revisited\",\n  \"house being renovated\",\n  \"house that has just been sold\",\n  \"house with a new addition or extension\",\n  // Work\n  \"open-plan office\",\n  \"call center\",\n  \"content moderation queue\",\n  \"hospital — general ward\",\n  \"hospital — psychiatric unit\",\n  \"hospital — pediatric ward\",\n  \"clinic — private\",\n  \"clinic — government-run\",\n  \"care facility — elderly\",\n  \"care facility — children\",\n  \"care facility — adults with disabilities\",\n  \"school — primary\",\n  \"school — secondary\",\n  \"university campus\",\n  \"university library\",\n  \"research laboratory\",\n  \"military installation\",\n  \"government office\",\n  \"courthouse\",\n  \"police station\",\n  \"factory floor\",\n  \"warehouse\",\n  \"slaughterhouse\",\n  \"construction site — active\",\n  \"construction site — abandoned mid-build\",\n  \"data center\",\n  \"server room\",\n  // Transit\n  \"subway — underground\",\n  \"train — long distance overnight\",\n  \"bus — intercity\",\n  \"airport — terminal\",\n  \"airport — after hours\",\n  \"plane — mid-flight\",\n  \"ferry — open water\",\n  \"highway rest stop\",\n  \"highway — isolated stretch\",\n  \"parking garage\",\n  \"taxi or rideshare\",\n  // Public\n  \"library — public\",\n  \"archive — national or institutional\",\n  \"museum after hours\",\n  \"shopping mall — active\",\n  \"shopping mall — abandoned\",\n  \"supermarket\",\n  \"laundromat — late night\",\n  \"pharmacy\",\n  \"post office\",\n  \"community center\",\n  \"church\",\n  \"mosque\",\n  \"synagogue\",\n  \"temple\",\n  \"funeral home\",\n  \"graveyard\",\n  // Nature and rural\n  \"old growth forest\",\n  \"managed forest — logging area\",\n  \"national park — remote trail\",\n  \"farm — working\",\n  \"farm — abandoned\",\n  \"fields — open flatland\",\n  \"coastline — cliffs\",\n  \"coastline — beach out of season\",\n  \"island — inhabited\",\n  \"island — uninhabited\",\n  \"cave system\",\n  \"mountain pass\",\n  \"marshland or swamp\",\n  \"drought-affected land\",\n  // Specialized\n  \"submarine\",\n  \"offshore oil platform\",\n  \"ship — cargo\",\n  \"ship — cruise\",\n  \"lighthouse\",\n  \"bunker or shelter\",\n  \"tunnel — road\",\n  \"tunnel — pedestrian\",\n  \"sewer system\",\n  \"abandoned town\",\n  \"border crossing\",\n  \"quarantine facility\",\n  \"prison\",\n  \"juvenile detention center\",\n  \"storage facility — self-storage\",\n  \"storage facility — industrial cold storage\",\n  \"hotel — luxury\",\n  \"hotel — budget roadside\",\n  \"motel — isolated\",\n  \"bed and breakfast\",\n  \"online space — social media platform\",\n  \"online space — private forum\",\n  \"online space — video call\",\n  \"online space — multiplayer game world\"\n];\n\nconst wrongnessSources = [\n  // People\n  \"a person acting almost normally but not quite\",\n  \"a person performing care perfectly but without variance\",\n  \"a person who never initiates but always responds\",\n  \"a person who agrees with everything said to them\",\n  \"a trusted figure defers all decisions to someone unseen\",\n  \"a person whose emotional responses are always one beat late\",\n  \"a person who refers to themselves in the third person\",\n  \"a person who remembers events differently each time they recount them\",\n  \"a person who cannot acknowledge an obvious absence\",\n  \"a person whose eyes don't track correctly\",\n  \"a child who speaks only in questions\",\n  \"an authority figure who becomes warm only during harm\",\n  \"a caregiver whose help cannot be refused\",\n  \"a person who finishes others sentences — correctly\",\n  \"a person who knows things they shouldn't\",\n  \"everyone agrees the narrator is mistaken\",\n  \"no one reacts to what the narrator reacts to\",\n  // Systems and rules\n  \"a system functioning exactly as intended producing wrong outcomes\",\n  \"a rule that cannot be broken no matter how irrational\",\n  \"a routine that punishes deviation in small imperceptible ways\",\n  \"errors are logged but never corrected\",\n  \"written rules contradict spoken ones — both enforced\",\n  \"compliance consistently creates worse outcomes than resistance\",\n  \"a process completes itself without user input\",\n  \"help requires surrendering autonomy\",\n  \"silence is treated as participation\",\n  \"refusal is interpreted as consent\",\n  \"the system improves measurably after harm occurs\",\n  \"records exist for events no one recalls\",\n  \"forms require information that doesn't exist yet\",\n  \"the procedure for stopping something requires completing it first\",\n  // Time and causality\n  \"time behaving inconsistently — not dramatically\",\n  \"effects consistently precede causes by small margins\",\n  \"gaps in time noticed only through consequences not the gaps themselves\",\n  \"the same conversation happens with slight variation\",\n  \"days repeat with small differences no one names\",\n  \"predestination — every action was already recorded\",\n  // Space and objects\n  \"rooms are dimensionally wrong but fully functional\",\n  \"objects return to approximate positions\",\n  \"a space subtly resists being altered\",\n  \"doors open onto wrong rooms — different each time\",\n  \"a building has more floors inside than outside\",\n  \"objects are present that no one placed there\",\n  \"objects disappear but are never acknowledged as missing\",\n  \"a subtle physical change in the environment accumulates\",\n  // Information and perception\n  \"missing or erased information with no explanation\",\n  \"the narrator stops recognizing familiar things\",\n  \"internal thoughts no longer match actions\",\n  \"photographs show things slightly different from memory\",\n  \"written language begins to mean something else\",\n  \"the narrator's own handwriting is unrecognizable\",\n  \"sounds arrive from directions they shouldn't\",\n  \"a smell that has no source but intensifies in specific rooms\",\n  // Social\n  \"concern is framed as selfishness\",\n  \"deviation triggers quiet escalation with no named cause\",\n  \"care is conditional on compliance\",\n  \"observation changes outcomes\",\n  \"everyone is kind in a way that forecloses refusal\",\n  \"social pressure so gradual it was never a single decision\",\n  \"the wrongness is statistically insignificant — provable\",\n  \"repetition occurs with unsettling variation no one names\"\n];\n\nconst endingTypes = [\n  // Action-based\n  \"the narrator takes an irreversible action\",\n  \"the narrator completes an action they spent the story resisting\",\n  \"the narrator enforces a rule they previously opposed\",\n  \"the narrator prepares another person for what they themselves went through\",\n  \"the narrator performs the same act that was done to them\",\n  // Identity and role\n  \"the narrator adopts procedural language replacing personal voice\",\n  \"a role fully replaces personal identity\",\n  \"the narrator becomes infrastructure — necessary and invisible\",\n  \"the narrator's former place is occupied by someone else\",\n  \"the narrator stops recognizing themselves without distress\",\n  // System absorption\n  \"absorption into a system — voluntary in appearance\",\n  \"the system now requires the narrator to function\",\n  \"removal has become impossible without collapse\",\n  \"the narrator inherits unresolved duties with no end point\",\n  \"records quietly update to reflect a new reality\",\n  // Normalization\n  \"horror becomes normalized — no drama\",\n  \"discomfort becomes the new baseline\",\n  \"routine continues uninterrupted after the horror\",\n  \"the narrator plans around the horror rather than against it\",\n  \"the narrator stops attempting resistance — not in defeat but in adjustment\",\n  // Physical\n  \"permanent physical change — unremarked upon\",\n  \"the body adapts without the narrator's comment\",\n  // Moral\n  \"moral compromise — the narrator knows and continues\",\n  \"responsibility is diffused until untraceable\",\n  \"harm is reframed as care — the narrator accepts this\",\n  // Administrative / logistical\n  \"the final act is mundane and administrative\",\n  \"the horror is acknowledged only through logistics\",\n  \"absence becomes indistinguishable from replacement\",\n  // Loss\n  \"loss of autonomy — permanent\",\n  \"memories are deprioritized in favor of stability\",\n  \"decisions are made without the narrator's input — this is now normal\",\n  \"control is transferred and never returned\",\n  // Continuity\n  \"the ending shows continuity not closure\",\n  \"forced participation — framed as choice\",\n  \"the narrator enforces on another what was enforced on them\"\n];\n\nconst toneModifiers = [\n  \"restrained — no overt emotion, only action and observation\",\n  \"clinical — detached voice, precise language, no metaphor\",\n  \"exhausted — the narrator has been here a long time\",\n  \"cooperative — the narrator is trying to be helpful throughout\",\n  \"bureaucratic — events described in administrative language\",\n  \"tender — genuine warmth that makes the horror worse\",\n  \"matter-of-fact — horror treated as routine\",\n  \"apologetic — narrator keeps excusing what is happening\",\n  \"optimistic — narrator interprets everything positively\",\n  \"uncertain — narrator frequently second-guesses their own perception\",\n  \"methodical — narrator focuses on procedure over experience\",\n  \"dissociated — narrator observes themselves from a distance\",\n  \"nostalgic — horror filtered through fond memory\",\n  \"professional — narrator maintains composure as identity\",\n  \"defeated — narrator is past the point of resistance\",\n  \"curious — narrator treats the horror as interesting\",\n  \"deferential — narrator constantly yields to others' interpretations\"\n];\n\nconst narrativeConstraints = [\n  \"the threat is never named or described directly\",\n  \"no character ever expresses fear openly\",\n  \"the word 'wrong' and its synonyms cannot be used\",\n  \"all dialogue must sound completely normal\",\n  \"the narrator never asks for help\",\n  \"no scene change — single continuous location\",\n  \"no time jumps — real-time only\",\n  \"the horror is only visible in what is absent not present\",\n  \"every character behaves with complete politeness\",\n  \"no physical violence of any kind\",\n  \"the threat is only perceptible through the narrator\",\n  \"all other characters are fully cooperative\",\n  \"the story contains exactly one moment of silence that changes everything\",\n  \"the narrator completes every task they are given\",\n  \"no character contradicts another\",\n  \"the horror must be explainable as coincidence until the final paragraph\",\n  \"the setting must feel safe and appropriate throughout\",\n  \"no doors locked — everything is accessible\",\n  \"the narrator has full freedom of movement at all times\",\n  \"the horror requires the narrator's participation to exist\"\n];\n\nconst openingStyle = [\n  \"begin in the middle of an ordinary action\",\n  \"begin with a sound\",\n  \"begin with a smell\",\n  \"begin with a physical sensation\",\n  \"begin with a piece of written text the narrator is reading\",\n  \"begin with dialogue — no context given\",\n  \"begin with a number or statistic\",\n  \"begin with a date and time\",\n  \"begin with a name — no explanation of who it belongs to\",\n  \"begin with a rule or instruction\",\n  \"begin with a memory that may not be accurate\",\n  \"begin mid-sentence as if the story has already started\",\n  \"begin with a question the narrator asks themselves\",\n  \"begin with something the narrator notices is missing\",\n  \"begin with the last normal moment before everything changes\",\n  \"begin with a completed action and its immediate aftermath\"\n];\n\n// ── Selector ──────────────────────────────────────────────\n\nconst pick = arr => arr[Math.floor(Math.random() * arr.length)];\nconst shuffle = arr => [...arr].sort(() => Math.random() - 0.5);\n\nconst uncommonNames = [\n  \"Sorrel\",\"Vael\",\"Thresh\",\"Maren\",\"Clio\",\"Orin\",\"Sable\",\n  \"Calder\",\"Wren\",\"Idris\",\"Lorn\",\"Tove\",\"Seren\",\"Birch\",\n  \"Cassian\",\"Elowen\",\"Pell\",\"Nerys\",\"Aldric\",\"Signe\",\n  \"Caspian\",\"Fenris\",\"Isolde\",\"Darro\",\"Brynn\",\"Corin\",\n  \"Eska\",\"Fenn\",\"Gwyl\",\"Halvard\",\"Imra\",\"Jael\",\"Kael\",\n  \"Lirien\",\"Mael\",\"Noor\",\"Oswin\",\"Petra\",\"Quillan\",\"Riven\",\n  \"Saskia\",\"Tallis\",\"Ulric\",\"Voss\",\"Waverly\",\"Xara\",\"Yael\",\n  \"Zephyr\",\"Aldous\",\"Breccan\",\"Corvin\",\"Dwyn\",\"Emric\",\n  \"Faela\",\"Gideon\",\"Hessa\",\"Ione\",\"Jarvik\",\"Kelan\",\"Lira\",\n  \"Mordecai\",\"Nessa\",\"Oleander\",\"Paeven\",\"Quill\",\"Rook\",\n  \"Stellan\",\"Tamsin\",\"Umber\",\"Vesper\",\"Wolfe\",\"Xiulan\",\n  \"Ysolde\",\"Zara\",\"Adaeze\",\"Bayo\",\"Chiamaka\",\"Dami\",\n  \"Emeka\",\"Folake\",\"Gbenga\",\"Hauwa\",\"Ife\",\"Jide\",\"Kemi\",\n  \"Laila\",\"Miraan\",\"Nadia\",\"Omar\",\"Priya\",\"Rahul\",\"Suki\",\n  \"Tariq\",\"Umar\",\"Veda\",\"Wanjiru\",\"Xolani\",\"Yusra\",\"Zaid\"\n];\n\nconst rand = Math.random();\nconst characterCount = rand < 0.35 ? 0 : rand < 0.70 ? 1 : rand < 0.90 ? 2 : 3;\n// 35% chance of 0, 35% chance of 1, 20% chance of 2, 10% chance of 3\nconst selectedNames = shuffle(uncommonNames).slice(0, characterCount);\n\nconst decisions = {\n  pov:                 pick(povOptions),\n  horror_mode:         pick(horrorModes),\n  setting:             pick(settings),\n  source_of_wrongness: pick(wrongnessSources),\n  ending_type:         pick(endingTypes),\n  tone_modifier:       pick(toneModifiers),\n  narrative_constraint: pick(narrativeConstraints),\n  opening_style:       pick(openingStyle),\n  character_count:     characterCount,\n  character_names:     selectedNames\n};\n\nconst decisionsText = \n`POV: ${decisions.pov}\nHORROR MODE: ${decisions.horror_mode}\nSETTING: ${decisions.setting}\nSOURCE OF WRONGNESS: ${decisions.source_of_wrongness}\nENDING TYPE: ${decisions.ending_type}\nTONE: ${decisions.tone_modifier}\nCONSTRAINT: ${decisions.narrative_constraint}\nOPENING STYLE: ${decisions.opening_style}\nCHARACTERS: ${decisions.character_count} — ${decisions.character_names.length > 0 ? decisions.character_names.join(', ') : 'none'}`;\n\nreturn [{ json: { decisions, decisionsText } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "3f5b69e7-70b0-40cf-b144-a18391b1201a",
+      "name": "Randomizer"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "qwen2.5-14b-instruct",
+          "mode": "list",
+          "cachedResultName": "QWEN2.5-14B-INSTRUCT"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a horror fiction writer. You write with restraint, precision, and dread. You never explain the horror. You never use clichés. You trust concrete detail and implication to carry all meaning. You do not resolve tension. You do not comfort the reader."
+            },
+            {
+              "content": "=Write ONLY the opening paragraph of a horror short story. 50 to 70 words. Nothing more.\n\nCREATIVE BRIEF:\n{{ $('Randomizer').item.json.decisionsText }}\n\nBEAT 1 OF YOUR OUTLINE TO USE AS BASIS:\n{{ $json.output[0].content[0].text }}\n\nREQUIREMENTS:\n- POV must be: {{ $('Randomizer').item.json.decisions.pov }}\n- Opening style: {{ $('Randomizer').item.json.decisions.opening_style }}\n- Tone: {{ $('Randomizer').item.json.decisions.tone_modifier }}\n- Setting: {{ $('Randomizer').item.json.decisions.setting }}\n- Hint at the wrongness without naming it\n- Do not introduce any character by name yet unless the opening style demands it\n- The final sentence of this paragraph must create a reason to keep reading\n\nDo not write a title. Do not continue past the first paragraph. Output only the paragraph."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        768,
+        0
+      ],
+      "id": "ed7f2381-8fdb-4e03-b565-c13dfe570fac",
+      "name": "Node 2",
+      "credentials": {
+        "openAiApi": {
+          "id": "JCfXlzmwWXSikEm9",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "qwen2.5-14b-instruct",
+          "mode": "list",
+          "cachedResultName": "QWEN2.5-14B-INSTRUCT"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a horror fiction writer. Serious, grounded, restrained. You never explain the horror. You never use clichés. You let concrete detail and implication carry all meaning. Sentence length is a tool — long sentences build dread and waiting, short sentences land impact. You do not reassure the reader. You do not resolve what should remain unresolved."
+            },
+            {
+              "content": "=Write a complete horror short story of 300–350 words.\n\nCREATIVE BRIEF:\n{{ $('Randomizer').item.json.decisionsText }}\n\nSTORY OUTLINE — follow this structure beat by beat:\n{{ $('Node 1').item.json.output[0].content[0].text }}\n\nBEGIN WITH THIS EXACT OPENING PARAGRAPH — reproduce it word for word, then continue:\n{{ $json.output[0].content[0].text }}\n\nWRITING RULES:\n- POV throughout: {{ $('Randomizer').item.json.decisions.pov }}\n- Horror mode: {{ $('Randomizer').item.json.decisions.horror_mode }}\n- Tone: {{ $('Randomizer').item.json.decisions.tone_modifier }}\n- Constraint to follow: {{ $('Randomizer').item.json.decisions.narrative_constraint }}\n- Source of wrongness: {{ $('Randomizer').item.json.decisions.source_of_wrongness }} — this must be present from the first third but never named directly\n- The ending must SHOW the consequence of: {{ $('Randomizer').item.json.decisions.ending_type }} — through action or image, not explanation\n- Plant at least 2 foreshadowing details in the first third that pay off in the final third\n- The threat or wrongness must never be fully described — imply, suggest, show edges\n- In scenes of rising tension use short sentences. In scenes of dread or waiting use long ones\n- No comedy. No warmth that resolves. No overt explanation of what the reader should feel\n- No title. Output only the story.\n- IMPORTANT: Stop writing before the final paragraph. \nWrite everything up to but not including the ending. \nEnd your output mid-story at the moment just before \nthe final consequence lands. Do not resolve anything."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 550
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1120,
+        0
+      ],
+      "id": "01c65e14-4981-43ed-9a51-fb977d9564b0",
+      "name": "Node 3",
+      "credentials": {
+        "openAiApi": {
+          "id": "JCfXlzmwWXSikEm9",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "qwen2.5-14b-instruct",
+          "mode": "list",
+          "cachedResultName": "QWEN2.5-14B-INSTRUCT"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a horror fiction writer specialising in endings. \nYou understand that a horror ending is not a revelation \nor a dramatic action. It is a single concrete image or \nbehavior that makes everything before it feel inevitable. \nYou never explain. You never summarise. You show one \nthing and stop."
+            },
+            {
+              "content": "=You are writing the final paragraph of a horror short \nstory. This paragraph is the only thing you will write.\n\nCREATIVE BRIEF:\n{{ $('Randomizer').item.json.decisionsText }}\n\nTHE STORY SO FAR — everything except the ending:\n{{ $json.output[0].content[0].text }}\n\nOUTLINE OF WHAT THE ENDING SHOULD SHOW:\n{{ $('Node 1').item.json.output[0].content[0].text }}\n\nENDING TYPE TO EXECUTE: \n{{ $('Randomizer').item.json.decisions.ending_type }}\n\nBEFORE YOU WRITE, answer these three questions \ninternally — do not output the answers:\n1. What are the two foreshadowing details planted \n   earlier in the story?\n2. Which one of those can the ending pay off visually \n   or behaviorally?\n3. What is the single most quiet, specific, physical \n   action or image that shows the ending type without \n   naming it?\n\nNow write only the final paragraph. 40–60 words maximum.\n\nRULES:\n- No dramatic gestures — no throwing, breaking, \n  running, or screaming\n- No explanation of what the reader should conclude\n- No words like: realized, understood, knew, felt, \n  feared, horror, wrong, strange, eerie\n- One concrete image or action. Then stop.\n- Tone: {{ $('Randomizer').item.json.decisions.tone_modifier }}\n\nOutput only the paragraph. Nothing else."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1472,
+        0
+      ],
+      "id": "244101ef-aaaa-49e6-87eb-42e5aa35e0ce",
+      "name": "Node 4",
+      "credentials": {
+        "openAiApi": {
+          "id": "JCfXlzmwWXSikEm9",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const draft = $('Node 3').first().json.output[0].content[0].text;\n\nconst ending = $input.first().json.output[0].content[0].text;\n\nconst fullStory = draft + '\\n\\n' + ending;\n\nreturn [{ json: { fullStory } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1824,
+        0
+      ],
+      "id": "4427b66d-ed67-45e2-8fc1-46f5f5dd95f4",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "qwen2.5-14b-instruct",
+          "mode": "list",
+          "cachedResultName": "QWEN2.5-14B-INSTRUCT"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a horror fiction editor. Precise, unsentimental, exacting. You improve drafts without changing their structure, plot, or voice. You cut what is over-explained. You sharpen what is vague. You never add warmth, comedy, or resolution that wasn't already there. You understand that in horror, what is removed is often more powerful than what is added."
+            },
+            {
+              "content": "=Revise this horror story draft. Keep all plot beats and structure intact. Make only these specific targeted improvements:\n\nCREATIVE BRIEF FOR REFERENCE:\n{{ $('Randomizer').item.json.decisionsText }}\n\nDRAFT:\n{{ $json.fullStory }}\n\nREVISION INSTRUCTIONS:\n\n1. WRONGNESS — In the first half of the story, the source of wrongness ({{ $('Randomizer').item.json.decisions.source_of_wrongness }}) must be present but subtle. If it is named, explained, or described directly anywhere in the first half — replace that moment with a concrete physical or behavioral detail that implies it without stating it.\n\n2. CONSTRAINT — Check that this rule was followed throughout: {{ $('Randomizer').item.json.decisions.narrative_constraint }}. If any moment violates it, rewrite that moment to comply.\n\n3. FORESHADOWING — Identify whether at least 2 details in the first third of the story pay off in the final third. If they do not exist or are too obvious, add or sharpen them so they read as incidental on first pass but meaningful on second.\n\n4. SENTENCES — In any scene where tension is rising, shorten the sentences. In any scene of dread, waiting, or slow realization, lengthen them. Fix any scene where the rhythm works against the emotion.\n\n5. ENDING — The final paragraph must show the consequence of ({{ $('Randomizer').item.json.decisions.ending_type }}) through a physical action, image, or behavioral detail. If the final paragraph tells instead of shows, or explains what the reader should conclude, rewrite it entirely.\n\n6. CUT — Remove any sentence that tells the reader what to feel, explains the horror, or uses words like: strange, wrong, unsettling, eerie, dread, terror, fear, horror, or scared. Replace with concrete observable detail or cut entirely.\n\n7. LENGTH — The revised story must be 300–350 words. If the draft exceeds this, cut the weakest sentences first — never cut foreshadowing, the ending, or the first wrongness moment.\n\nOutput only the revised story. No commentary, no explanation of changes."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 550
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        2048,
+        0
+      ],
+      "id": "3cf48a26-0a35-4576-af58-3f5fe9eee910",
+      "name": "Node 5",
+      "credentials": {
+        "openAiApi": {
+          "id": "JCfXlzmwWXSikEm9",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0dc1ac77-934c-48f6-a46e-0ee339828c5a",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Node 1": {
+      "main": [
+        [
+          {
+            "node": "Node 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Randomizer": {
+      "main": [
+        [
+          {
+            "node": "Node 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Node 2": {
+      "main": [
+        [
+          {
+            "node": "Node 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Node 3": {
+      "main": [
+        [
+          {
+            "node": "Node 4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Node 4": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Node 5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Node 5": {
+      "main": [
+        []
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Randomizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "771dde34-fed7-4dd8-a671-0f5bcb96f3dd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "99760253acafc950b45bca9d40f879d0c42df29fd78f9c11e457ea708e011beb"
+  },
+  "id": "3pvuJTTxuvOOkFsx",
+  "tags": []
+}
