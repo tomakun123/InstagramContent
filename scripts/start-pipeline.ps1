@@ -20,6 +20,11 @@
 .PARAMETER SkipTunnel
     Start everything except cloudflared (useful when working locally).
 
+.PARAMETER Follow
+    After startup, stay attached and stream the live view (watch-pipeline.ps1)
+    instead of returning to the prompt. Ctrl+C leaves the view; the pipeline
+    keeps running.
+
 .PARAMETER TimeoutSeconds
     How long to wait for each health check before giving up. Default 90.
 
@@ -31,6 +36,7 @@
 param(
     [switch]$Install,
     [switch]$SkipTunnel,
+    [switch]$Follow,
     [int]$TimeoutSeconds = 90
 )
 
@@ -341,5 +347,13 @@ Write-Host 'Pipeline is up.' -ForegroundColor Green
 Write-Host "  n8n     http://localhost:5678"
 if ($env:N8N_EDITOR_BASE_URL) { Write-Host "  public  $($env:N8N_EDITOR_BASE_URL)" }
 Write-Host "  logs    $LogDir"
+Write-Host "  watch   .\scripts\watch-pipeline.ps1"
 Write-Host "  stop    .\scripts\stop-pipeline.ps1"
 Write-Host ''
+
+if ($Follow) {
+    # Hand over to the live view. Everything above runs hidden with its output
+    # redirected to logs\, so without this the terminal goes quiet the moment
+    # startup finishes. Ctrl+C leaves the view without stopping anything.
+    & (Join-Path $PSScriptRoot 'watch-pipeline.ps1')
+}
