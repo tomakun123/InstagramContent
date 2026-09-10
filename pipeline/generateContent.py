@@ -212,7 +212,9 @@ if args.renderer == "ffmpeg":
     # 3413x1920 intermediate frame and then discard two thirds of it.
     vf = (
         f"[0:v]crop='min(iw,ih*9/16)':ih,"
-        f"scale={TARGET_W}:{TARGET_H},"
+        # lanczos rather than the default bicubic: the crop is only 608px wide,
+        # so this frame is always being upscaled and the scaler choice shows.
+        f"scale={TARGET_W}:{TARGET_H}:flags=lanczos,"
         f"ass={rel(subs_path)}:fontsdir=assets[v]"
     )
 
@@ -226,7 +228,29 @@ if args.renderer == "ffmpeg":
             "-filter_complex", vf,
             "-map", "[v]", "-map", "1:a",
             "-r", str(FPS),
-            "-c:v", "h264_nvenc", "-preset", "p4", "-pix_fmt", "yuv420p",
+            # Quality settings. Without an explicit rate control NVENC falls back
+            # to roughly 2 Mbps, which is what both this renderer and the old
+            # MoviePy one were shipping at 1080x1920 - well under YouTube's ~8
+            # Mbps recommendation for 1080p30.
+            #
+            # Constant quality rather than a fixed -b:v, so calm scenes spend
+            # less and high-motion parkour spends more. Measured over a 44s
+            # segment (encode time / size / bitrate):
+            #     current p4, no rate control   6.00s   11 MB   2.21 Mbps
+            #     cq 21                         6.44s   69 MB   13.2 Mbps
+            #     cq 23                         6.44s   54 MB   10.4 Mbps
+            #     cq 25                         6.44s   42 MB   8.18 Mbps  <- here
+            #     cq 27                         6.44s   33 MB   6.42 Mbps
+            # so the whole upgrade costs +0.44s (+7%) of render time.
+            #
+            # spatial_aq matters more than the bitrate on this content: horror
+            # over dark Minecraft footage is mostly low-luma, which is exactly
+            # where flat quantization bands.
+            "-c:v", "h264_nvenc", "-preset", "p5", "-tune", "hq",
+            "-rc", "vbr", "-cq", "25", "-b:v", "0",
+            "-maxrate", "12M", "-bufsize", "18M",
+            "-spatial_aq", "1", "-aq-strength", "8", "-rc-lookahead", "20",
+            "-pix_fmt", "yuv420p",
             "-c:a", "aac", "-b:a", "192k",
             "-shortest",
             "-movflags", "+faststart",

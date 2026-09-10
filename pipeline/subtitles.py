@@ -11,8 +11,11 @@ from dataclasses import dataclass
 from datetime import timedelta
 from typing import Iterable, List, Sequence, Tuple
 
-# Matches the previous MoviePy TextClip styling.
-DEFAULT_MAX_CHARS = 30
+# Short-form captioning style: a few words at a time, changing quickly. The word
+# count is the rule that actually fires; the character cap is a backstop so a run
+# of long words still breaks rather than overflowing the frame.
+DEFAULT_MAX_WORDS = 3
+DEFAULT_MAX_CHARS = 22
 PLAY_RES = (1080, 1920)
 FONT_NAME = "Arial Black"   # the internal family name inside assets/use.ttf
 
@@ -55,31 +58,40 @@ def words_from_cues(cues: Iterable) -> List[Tuple[float, float, str]]:
 def group_words(
     words: Sequence[Tuple[float, float, str]],
     max_chars: int = DEFAULT_MAX_CHARS,
+    max_words: int = DEFAULT_MAX_WORDS,
 ) -> List[Line]:
-    """Group words into lines of at most `max_chars` characters."""
+    """Group words into lines of at most `max_words` words and `max_chars` chars.
+
+    A line is flushed as soon as adding the next word would exceed *either*
+    limit, so `max_words` sets the rhythm and `max_chars` prevents an unusually
+    long run from overflowing the frame.
+    """
     lines: List[Line] = []
     if not words:
         return lines
 
     current = ""
+    count = 0
     start = words[0][0]
     end = words[0][1]
 
     for w_start, w_end, text in words:
-        if len(current) + len(text) + 1 <= max_chars:
-            if current:
-                current += " "
-            else:
-                # first word of a fresh line sets its start
-                start = w_start
-            current += text
-            end = w_end
+        fits_chars = len(current) + len(text) + 1 <= max_chars
+        fits_words = count + 1 <= max_words
+
+        if current and not (fits_chars and fits_words):
+            lines.append(Line(start, end, current))
+            current = ""
+            count = 0
+
+        if current:
+            current += " "
         else:
-            if current:
-                lines.append(Line(start, end, current))
-            current = text
+            # first word of a fresh line sets its start
             start = w_start
-            end = w_end
+        current += text
+        count += 1
+        end = w_end
 
     if current:
         lines.append(Line(start, end, current))
