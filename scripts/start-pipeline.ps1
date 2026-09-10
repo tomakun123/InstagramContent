@@ -129,6 +129,27 @@ function Wait-Healthy {
     return $false
 }
 
+function ConvertTo-QuotedArgs {
+    <# Quote any argument containing whitespace.
+
+       Start-Process -ArgumentList joins the array with spaces and does no
+       quoting of its own, so an unquoted path with a space is silently split
+       into two arguments. That is not hypothetical here: this repo lives under
+       "C:\Users\Thomas M\...", so passing the watcher's path handed Python
+       "C:\Users\Thomas" as the script name - and a stray VC_redist install log
+       happens to sit at exactly that path, so Python parsed *that* and raised a
+       SyntaxError instead of failing cleanly.
+
+       Done centrally rather than per call site so future callers inherit it. #>
+    param([string[]]$Arguments)
+
+    if (-not $Arguments) { return @() }
+
+    return @($Arguments | ForEach-Object {
+        if ($_ -match '\s' -and $_ -notmatch '^".*"$') { '"' + $_ + '"' } else { $_ }
+    })
+}
+
 function Start-Logged {
     <# Launch a background process with stdout/stderr captured into logs/. #>
     param(
@@ -141,7 +162,7 @@ function Start-Logged {
     $err = Join-Path $LogDir "$Name-$Stamp.err.log"
 
     $p = Start-Process -FilePath $FilePath `
-                       -ArgumentList $ArgumentList `
+                       -ArgumentList (ConvertTo-QuotedArgs $ArgumentList) `
                        -WorkingDirectory $WorkingDirectory `
                        -RedirectStandardOutput $out `
                        -RedirectStandardError $err `
@@ -174,8 +195,29 @@ function Resolve-Command {
     return $candidates[0].Source
 }
 
+function Save-Pids {
+    <# Persist what we started, merging with any pids from a previous partial
+       run so stop-pipeline can still find them. #>
+    $allPids = @{}
+    if (Test-Path $PidFile) {
+        try {
+            (Get-Content $PidFile -Raw | ConvertFrom-Json).PSObject.Properties |
+                ForEach-Object { $allPids[$_.Name] = $_.Value }
+        } catch { }
+    }
+    foreach ($k in $Started.Keys) { $allPids[$k] = $Started[$k] }
+
+    if ($allPids.Count -gt 0) {
+        $allPids | ConvertTo-Json | Set-Content -Path $PidFile -Encoding utf8
+    }
+}
+
 function Abort {
     param([string]$Message)
+    # Save first: a partial startup is exactly when stop-pipeline needs the pid
+    # list, and the message below tells the user to go and run it.
+    Save-Pids
+
     Write-Host ''
     Write-Fail $Message
     Write-Host "Logs: $LogDir" -ForegroundColor Yellow
@@ -328,19 +370,7 @@ if ($existing) {
 
 # ---------------------------------------------------------------- finish ----
 
-# Merge with any pids from a previous partial run so stop-pipeline can still find them.
-$allPids = @{}
-if (Test-Path $PidFile) {
-    try {
-        (Get-Content $PidFile -Raw | ConvertFrom-Json).PSObject.Properties |
-            ForEach-Object { $allPids[$_.Name] = $_.Value }
-    } catch { }
-}
-foreach ($k in $Started.Keys) { $allPids[$k] = $Started[$k] }
-
-if ($allPids.Count -gt 0) {
-    $allPids | ConvertTo-Json | Set-Content -Path $PidFile -Encoding utf8
-}
+Save-Pids
 
 Write-Host ''
 Write-Host 'Pipeline is up.' -ForegroundColor Green
