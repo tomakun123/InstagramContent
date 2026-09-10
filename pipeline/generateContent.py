@@ -138,7 +138,13 @@ async def synthesize():
     with open(voice_path, "wb") as f:
         async for chunk in tts.stream():
             if chunk["type"] == "audio":
-                f.write(chunk["data"])
+                # "data" is NotRequired on TTSChunk, and a type checker cannot
+                # narrow the TypedDict from the "type" value, so read it through
+                # .get(). edge-tts does emit empty audio chunks; skipping them is
+                # correct, and writing None would raise.
+                data = chunk.get("data")
+                if data:
+                    f.write(data)
             elif chunk["type"] == "WordBoundary":
                 sub_maker.feed(chunk)
 
