@@ -1,8 +1,10 @@
 # InstagramContent
 
-Automated horror-short pipeline. Every 50 minutes: writes a story with a local LLM,
-narrates it, renders a vertical subtitled video, uploads it to YouTube, and emails
-a confirmation.
+Automated horror-short pipeline. On a schedule: writes a story with a local LLM,
+narrates it, renders a vertical subtitled video, uploads it to YouTube and Instagram
+Reels, and emails a confirmation for each. YouTube allows roughly six uploads a day on the default API quota;
+when it starts refusing, the publish workflow emails once and stops the whole
+pipeline (`stop-pipeline.ps1`) — restart it with `start-pipeline.ps1` after 07:00 UTC.
 
 ## Start it
 
@@ -21,7 +23,7 @@ dependency order, with health checks. Safe to run twice.
 ## Layout
 
 ```
-pipeline/    generateContent.py (TTS -> music -> render), storyWatcher.py, paths.py
+pipeline/    generateContent.py (TTS -> music -> render), storyWatcher.py, videoServer.py, paths.py
 scripts/     start/stop launchers
 workflows/   n8n workflow exports
 docs/        architecture, setup, benchmarks

@@ -1,0 +1,148 @@
+{
+  "name": "InstagramTokenRefresh",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5eb4ec98-12b4-4897-ac02-9b122914e937",
+      "name": "Every 30 days"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://graph.instagram.com/refresh_access_token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "ig_refresh_token"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        224,
+        0
+      ],
+      "id": "e415431f-42ee-4f46-85cf-f90be0d547ad",
+      "name": "Refresh Token",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "slimey.ninja2024@gmail.com",
+        "subject": "Instagram token refreshed - paste into n8n",
+        "message": "={{ 'The Instagram access token was refreshed and is valid for ' + Math.round($json.expires_in / 86400) + ' more days.'+'\\n\\n'+'n8n cannot update its own credential, so paste this into Credentials -> Instagram Graph -> access_token:'+'\\n\\n' + $json.access_token }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        -96
+      ],
+      "id": "24e5fc20-efe1-42b3-95b7-e34474f2d90c",
+      "name": "Email New Token",
+      "webhookId": "49ece7b3-25a5-4e3f-9704-3da1ea648566",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "S0wDGIZfHsSLdOKF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "slimey.ninja2024@gmail.com",
+        "subject": "Instagram token refresh FAILED",
+        "message": "={{ 'Refreshing the Instagram token failed: ' + ($json.error?.description || $json.error?.message || JSON.stringify($json.error)) + '\\n\\nIf it has already expired, generate a new one in the Meta app (Instagram > API setup > Generate access tokens) and paste it into the Instagram Graph credential.' }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        96
+      ],
+      "id": "b9b916e5-8ef3-4d49-9cc5-d51d2c7b734a",
+      "name": "Email Refresh Failed",
+      "webhookId": "d739aeb7-55db-45d2-87e1-81c8ab94f357",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "S0wDGIZfHsSLdOKF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Instagram token refresh\nInstagram-Login tokens last 60 days and can be refreshed any time after 24 h. This runs monthly, refreshes, and emails the new token. The refreshed token replaces the old one server-side, so the credential in n8n must be updated by hand from the email - the old value stops working at its original expiry.",
+        "height": 200,
+        "width": 460
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -260
+      ],
+      "id": "6215f93a-9ecb-4981-8f30-2d8c5f35be9a",
+      "name": "Sticky Note"
+    }
+  ],
+  "connections": {
+    "Every 30 days": {
+      "main": [
+        [
+          {
+            "node": "Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refresh Token": {
+      "main": [
+        [
+          {
+            "node": "Email New Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email Refresh Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

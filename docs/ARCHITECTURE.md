@@ -1,6 +1,7 @@
 # Architecture
 
-An automated faceless-content pipeline. Every 50 minutes it writes a horror story
+An automated faceless-content pipeline. On a schedule (30 minutes on the live
+instance; the export says 50) it writes a horror story
 with a locally-hosted LLM, narrates it, renders a vertical subtitled Short, uploads
 it to YouTube, and emails a confirmation — unattended.
 
@@ -12,8 +13,9 @@ handles media. They coordinate through shared files plus one webhook.
 | Piece | What it does |
 |---|---|
 | **LM Studio** (`:1234`) | Serves `qwen2.5-14b-instruct` behind an OpenAI-compatible API. Both n8n LLM nodes point at it. |
-| **n8n** (`:5678`) | Orchestration. Three workflows: `ContentGeneration3.0`, `PublishingContent3.0`, `PromptHorrorGeneration`. |
-| **cloudflared** | Named tunnel exposing n8n on a subdomain, so platform APIs can reach the OAuth callbacks. |
+| **n8n** (`:5678`) | Orchestration. Workflows: `ContentGeneration3.0`, `PublishingContent3.0`, `PromptHorrorGeneration`, plus the monthly `InstagramTokenRefresh`. |
+| **cloudflared** | Named tunnel exposing n8n on a subdomain (OAuth callbacks) and the video server on a second one (Instagram fetches the mp4 from it). |
+| **`pipeline/videoServer.py`** (`:8090`) | Serves `HorrorVideos/*.mp4` at `/v/<secret>/<name>.mp4` with Range support. Only runs when `VIDEO_URL_SECRET` is set. |
 | **`pipeline/storyWatcher.py`** | Watches `Metadata/`. A new JSON there means "a story is ready" and triggers the render. |
 | **`pipeline/generateContent.py`** | TTS → music mix → ffmpeg render, in one pass. ~17 seconds per video. |
 
@@ -59,14 +61,36 @@ Schedule Trigger (every 50 min)  /  manual "Execute workflow"
         ├─ Read Video File
         ├─ Start Resumable Upload  (POST googleapis session)   ──error─┐
         ├─ Upload Video Bytes      (PUT the bytes)             ──error─┤
-        ├─ Update a video     → real title, description, tags, public     │
+        ├─ Update a video     → real title, description, tags, public ──error─┤
         ├─ Email Success      → Gmail with the /shorts/{id} link           │
-        └─ Email Failure      ←──────────────────────────────────┘
+        ├─ Classify Failure   ← errorText + stopPipeline (quota/limit regex) ┘
+        ├─ Email Failure
+        ├─ Is Upload Limit?  ──true──▶ Stop Pipeline (detached stop-pipeline.ps1)
+        │
+        └─ Instagram lane (forks from Parse Metadata, runs beside YouTube)
+             ├─ IG Params           videoUrl = VIDEO_PUBLIC_BASE/v/<secret>/<story>.mp4
+             ├─ IG Create Container POST graph.instagram.com/{ig}/media  media_type=REELS
+             ├─ IG Wait 20 s ⇄ IG Container Status ⇄ IG Ready?   (≤15 polls)
+             ├─ IG Publish          POST /{ig}/media_publish
+             ├─ IG Permalink → IG Email Success
+             └─ IG Email Failure    (never routes into Stop Pipeline)
 
-Both HTTP nodes use `onError: continueErrorOutput`. `videos.insert` costs 1,600
-quota units against a 10,000/day default — roughly six uploads a day — so a 403
-on quota is the expected failure, not an exceptional one. It now produces an
-email instead of an execution that simply stops.
+All three YouTube nodes use `onError: continueErrorOutput`. `videos.insert` costs
+1,600 quota units against a 10,000/day default — roughly six uploads a day — so
+"exceeded the number of videos they may upload" / quotaExceeded is the expected
+failure, not an exceptional one. Because the error branch completes normally, n8n
+records such a run as **success**; the failure email is the real signal.
+
+When the failure is the upload limit, `Stop Pipeline` launches
+`scripts/stop-pipeline.ps1` detached (5 s delay so the email and the execution
+record land first). The script kills the n8n process that is running the node,
+which is why it must not be invoked synchronously. Restart with
+`start-pipeline.ps1` after the quota resets at 07:00 UTC. Any other failure just
+emails and leaves the pipeline running.
+
+`Merge Upload Session` has `includeUnpaired: false` on purpose: with it on, the
+error item from a failed session start was paired with the metadata item and
+`Upload Video Bytes` ran with no URL, producing a second failure email per story.
 ```
 
 ## Synchronisation contracts
@@ -114,6 +138,18 @@ succeeded, and which story it was.
 - **Webhook POST fails** → the video is already finalised on disk; the run logs a
   warning and does not fail. Publish it by hand by re-POSTing, or re-run with
   `--story N --notify`.
+- **YouTube refuses the upload (daily limit / quota)** → one failure email, then
+  the whole pipeline is stopped so it does not keep burning LLM/render cycles on
+  stories that cannot be posted. The video and metadata stay on disk; re-POST
+  `/webhook/render-complete` after restarting. Any other publish error emails and
+  keeps running.
+- **Instagram container never reaches FINISHED / #9004 "media could not be
+  fetched"** → Meta could not download the mp4: the video server or the tunnel
+  hostname is down. Emails and keeps running; YouTube is unaffected.
+- **Instagram token expired** → every IG call returns an OAuth error. Tokens last
+  60 days; `InstagramTokenRefresh` renews monthly and emails the new value, which
+  has to be pasted into the credential. If it lapsed, generate a fresh one in the
+  Meta app.
 
 ## Manual operation
 

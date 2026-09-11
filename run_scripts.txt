@@ -1,3 +1,21 @@
 .\scripts\stop-pipeline.ps1
 
+Stop-Process -Id 14284 -Force; cd "C:\Users\Thomas M\Desktop\InstagramContent"; .\scripts\start-pipeline.ps1
+
 .\scripts\start-pipeline.ps1 -Install
+
+cd "C:\Users\Thomas M\Desktop\InstagramContent"; .\scripts\stop-pipeline.ps1; .\scripts\start-pipeline.ps1
+
+$secret = (Get-Content "C:\Users\Thomas M\Desktop\InstagramContent\.env" | Where-Object { $_ -like 'VIDEO_URL_SECRET=*' }).Split('=')[1]; Invoke-WebRequest -Method Head -Uri "https://videos.thomasmotaisportfolio.net/v/$secret/HorrorStory91.mp4" | Select-Object StatusCode, @{n='Ranges';e={$_.Headers['Accept-Ranges']}}
+
+
+// Posting a webhook manually to publish
+$story = 88
+$root  = "C:\Users\Thomas M\Desktop\InstagramContent"
+$body  = @{
+    story_number    = $story
+    story_file_name = "HorrorStory$story"
+    video_path      = "$root\HorrorVideos\HorrorStory$story.mp4"
+    metadata_path   = "$root\Metadata\HorrorStory$story`_metadata.json"
+} | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri "https://n8n.thomasmotaisportfolio.net/webhook-test/render-complete" -ContentType "application/json" -Body $body

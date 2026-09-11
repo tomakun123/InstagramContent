@@ -3,13 +3,14 @@
     Starts the whole content pipeline with one command.
 
 .DESCRIPTION
-    Brings up the four services the pipeline depends on, in dependency order,
+    Brings up the five services the pipeline depends on, in dependency order,
     waiting for each to report healthy before starting the next:
 
         1. LM Studio    (:1234)  - serves the local model n8n prompts
         2. n8n          (:5678)  - orchestration
-        3. cloudflared           - public tunnel to n8n
-        4. storyWatcher.py       - renders a video when n8n drops metadata
+        3. videoServer  (:8090)  - serves HorrorVideos\ for Instagram to fetch
+        4. cloudflared           - public tunnel to n8n and the video server
+        5. storyWatcher.py       - renders a video when n8n drops metadata
 
     Safe to run twice: anything already running is left alone.
 
@@ -148,6 +149,16 @@ function ConvertTo-QuotedArgs {
     return @($Arguments | ForEach-Object {
         if ($_ -match '\s' -and $_ -notmatch '^".*"$') { '"' + $_ + '"' } else { $_ }
     })
+}
+
+function Get-PipelinePython {
+    <# The interpreter for pipeline\*.py: the repo .venv if present, else PATH. #>
+    $venvPython = Join-Path $Root '.venv\Scripts\python.exe'
+    if (Test-Path $venvPython) { return $venvPython }
+    Write-Host '    NOTE .venv not found, falling back to system Python' -ForegroundColor Yellow
+    $python = Resolve-Command 'python'
+    if ($null -eq $python) { Abort 'No Python interpreter found.' }
+    return $python
 }
 
 function Start-Logged {
@@ -300,7 +311,28 @@ if (Test-PortListening -Port 5678) {
     Write-Ok 'healthy on :5678'
 }
 
-# -- 3. cloudflared ----------------------------------------------------------
+# -- 3. video server ---------------------------------------------------------
+# Instagram fetches the finished mp4 from a public URL, so the videos directory
+# has to be reachable through the tunnel. Skipped when the secret is unset so a
+# YouTube-only install keeps working unchanged.
+Write-Step 'videoServer.py (:8090)'
+if (-not $env:VIDEO_URL_SECRET) {
+    Write-Skip 'VIDEO_URL_SECRET not set in .env (Instagram publishing disabled)'
+} elseif (Test-PortListening -Port 8090) {
+    Write-Skip 'already listening on :8090'
+} else {
+    $python = Get-PipelinePython
+    $server = Join-Path $Root 'pipeline\videoServer.py'
+    $p = Start-Logged -Name 'videoserver' -FilePath $python -ArgumentList @('-u', $server)
+    $Started['videoserver'] = $p.Id
+
+    if (-not (Wait-Healthy -Url 'http://127.0.0.1:8090/healthz' -Timeout $TimeoutSeconds -Label 'videoServer')) {
+        Abort 'videoServer.py failed to start. Check logs\videoserver-*.err.log'
+    }
+    Write-Ok "healthy on :8090 (pid $($p.Id))"
+}
+
+# -- 4. cloudflared ----------------------------------------------------------
 if ($SkipTunnel) {
     Write-Step 'cloudflared'
     Write-Skip '-SkipTunnel specified'
@@ -339,7 +371,7 @@ if ($SkipTunnel) {
     }
 }
 
-# -- 4. story watcher --------------------------------------------------------
+# -- 5. story watcher --------------------------------------------------------
 Write-Step 'storyWatcher.py'
 
 $existing = Get-CimInstance Win32_Process -Filter "Name like '%python%'" -ErrorAction SilentlyContinue |
@@ -348,14 +380,7 @@ $existing = Get-CimInstance Win32_Process -Filter "Name like '%python%'" -ErrorA
 if ($existing) {
     Write-Skip "already running (pid $($existing.ProcessId))"
 } else {
-    $venvPython = Join-Path $Root '.venv\Scripts\python.exe'
-    if (Test-Path $venvPython) {
-        $python = $venvPython
-    } else {
-        Write-Host '    NOTE .venv not found, falling back to system Python' -ForegroundColor Yellow
-        $python = Resolve-Command 'python'
-        if ($null -eq $python) { Abort 'No Python interpreter found.' }
-    }
+    $python = Get-PipelinePython
 
     $watcher = Join-Path $Root 'pipeline\storyWatcher.py'
     $p = Start-Logged -Name 'watcher' -FilePath $python -ArgumentList @('-u', $watcher)

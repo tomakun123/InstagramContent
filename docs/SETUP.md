@@ -19,7 +19,7 @@ Register it to start at logon so the pipeline survives a reboot:
 Useful flags: `-SkipTunnel` (local work, no cloudflared), `-TimeoutSeconds N`
 (default 90s per health check). The launcher is idempotent — running it twice will
 not spawn duplicate services, which matters because two n8n instances would
-double-fire the 50-minute cron.
+double-fire the generation cron.
 
 Logs land in `logs/<service>-<date>.out.log` and `.err.log`.
 
@@ -70,6 +70,12 @@ LMS_MODEL=qwen2.5-14b-instruct          # optional, this is the default
 # finishes, which is what triggers PublishingContent2.0. If unset, videos are
 # still rendered but nothing is published.
 N8N_RENDER_WEBHOOK=http://127.0.0.1:5678/webhook/render-complete
+
+# Instagram (optional - leave unset for a YouTube-only install).
+# The video server only starts when VIDEO_URL_SECRET is set.
+IG_USER_ID=<instagram user id>            # from GET graph.instagram.com/me?fields=id
+VIDEO_URL_SECRET=<long random string>     # path segment that gates the public video URL
+VIDEO_PUBLIC_BASE=https://videos.<your-domain>   # tunnel hostname for videoServer.py
 ```
 
 `start-pipeline.ps1` parses `.env` and exports it before launching n8n, which
@@ -91,7 +97,8 @@ Import all three JSON files from `workflows/` into n8n, then attach credentials:
 | Workflow | Credentials needed |
 |---|---|
 | `ContentGenerate2.0` | OpenAI (pointed at LM Studio) |
-| `PublishingContent2.0` | YouTube OAuth2, Gmail OAuth2 |
+| `PublishingContent3.0` | YouTube OAuth2, Gmail OAuth2, Instagram Graph (Query Auth, see §8) |
+| `InstagramTokenRefresh` | Instagram Graph (Query Auth), Gmail OAuth2 |
 | `PromptHorrorGeneration` | OpenAI (pointed at LM Studio) |
 
 Credentials are **not** in these exports — they live in n8n's own database and must
@@ -112,7 +119,61 @@ Use the local address (`http://127.0.0.1:5678/...`) rather than the tunnel
 hostname — the render runs on the same machine as n8n, so there is no reason to
 route the callback out through Cloudflare and back.
 
-### 8. Public hosting
+### 8. Instagram Reels
+
+Instagram does not accept uploaded bytes; Meta downloads the finished mp4 from a
+public URL. `pipeline/videoServer.py` serves `HorrorVideos/` on `:8090` and the
+tunnel exposes it. Four one-time steps:
+
+**a. Meta app.** At developers.facebook.com create an app and add the *Instagram*
+product using **"API setup with Instagram business login"** (no Facebook Page
+needed). The Instagram account must be a Professional account. In
+*1. Generate access tokens* add the account, accept the tester invite in the
+Instagram app (Settings → Website permissions → Tester invites), then
+*Generate token*. It is already long-lived (60 days). Webhooks, business login and
+App Review on that page are not needed — a dev-mode app can publish to its own
+tester accounts.
+
+**b. Verify** (paste in a browser, token redacted from anything you commit):
+
+```
+https://graph.instagram.com/me?fields=id,username&access_token=<token>
+https://graph.instagram.com/<id>/content_publishing_limit?access_token=<token>
+```
+
+The first gives `IG_USER_ID`; the second must return `quota_usage` (25 posts /
+24 h), which proves `instagram_business_content_publish` was granted.
+
+**c. n8n credential.** Credentials → *Query Auth*, name `Instagram Graph`,
+parameter name `access_token`, value = the token. Attach it to the four
+`IG …` HTTP nodes in `PublishingContent3.0` and to `Refresh Token` in
+`InstagramTokenRefresh` after importing them.
+
+**d. Tunnel hostname.** Add an ingress to `~/.cloudflared/config.yml`, above the
+404 catch-all, and route DNS for it once:
+
+```yaml
+ingress:
+  - hostname: n8n.<your-domain>
+    service: http://localhost:5678
+  - hostname: videos.<your-domain>
+    service: http://localhost:8090
+  - service: http_status:404
+```
+
+```powershell
+cloudflared tunnel route dns <tunnel-name> videos.<your-domain>
+```
+
+Then fill in the three `IG`/`VIDEO_*` keys in `.env` and restart the pipeline.
+Check with `curl -I https://videos.<your-domain>/v/<secret>/HorrorStory1.mp4` —
+expect `200` and `Accept-Ranges: bytes`; without the secret, `404`.
+
+Import `workflows/InstagramTokenRefresh.json` and activate it: it refreshes the
+token monthly and emails the new value, which must be pasted into the credential
+by hand (n8n cannot rewrite its own credentials from a workflow).
+
+### 9. Public hosting
 
 `web/Instagram/` and `web/TikTok/` hold the privacy policy, terms of service, and
 TikTok domain-verification files required for platform API review. Deploy them to
