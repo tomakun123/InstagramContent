@@ -1,0 +1,1021 @@
+{
+  "name": "TikTokTest",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Post to TikTok",
+        "formDescription": "Publish an already-rendered story to the connected TikTok account.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Story number",
+              "fieldType": "number",
+              "placeholder": "e.g. 92",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Privacy level",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "SELF_ONLY"
+                  },
+                  {
+                    "option": "PUBLIC_TO_EVERYONE"
+                  },
+                  {
+                    "option": "MUTUAL_FOLLOW_FRIENDS"
+                  },
+                  {
+                    "option": "FOLLOWER_OF_CREATOR"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "buttonLabel": "Post to TikTok"
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -1900,
+        1040
+      ],
+      "id": "6387cb3c-9a99-491d-a172-6f00edffc5d2",
+      "name": "Post to TikTok Form",
+      "webhookId": "36320445-7e54-44e5-9330-c441dc534003"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f350b4a1-49be-4ad6-be1b-ebd533442579",
+              "name": "storyFileName",
+              "type": "string",
+              "value": "={{ 'HorrorStory' + $json['Story number'] }}"
+            },
+            {
+              "id": "f6dccb44-5d9a-4320-9f2c-1bd0e1e72795",
+              "name": "metadataPath",
+              "type": "string",
+              "value": "={{ 'C:/Users/Thomas M/Desktop/InstagramContent/Metadata/HorrorStory' + $json['Story number'] + '_metadata.json' }}"
+            },
+            {
+              "id": "2545cfac-8b30-4079-9a33-85539e05740c",
+              "name": "videoPath",
+              "type": "string",
+              "value": "={{ 'C:/Users/Thomas M/Desktop/InstagramContent/HorrorVideos/HorrorStory' + $json['Story number'] + '.mp4' }}"
+            },
+            {
+              "id": "1f4e4e91-d673-4a3d-811b-1dfe542f51eb",
+              "name": "requestedPrivacy",
+              "type": "string",
+              "value": "={{ $json['Privacy level'] }}"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1676,
+        1040
+      ],
+      "id": "ca2e6069-1c5c-47be-8fe9-2f2142069777",
+      "name": "Story Paths"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Story Paths').item.json.metadataPath }}",
+        "options": {
+          "dataPropertyName": "metadata"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -1452,
+        1040
+      ],
+      "id": "2d8b8330-fc18-477f-a506-004364ec9cc7",
+      "name": "Read Metadata File"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  if (typeof item.json.metadata !== \"string\") {\n    throw new Error(\"Expected item.json.metadata to be a JSON string\");\n  }\n\n  let parsed;\n  try {\n    parsed = JSON.parse(item.json.metadata);\n  } catch (e) {\n    throw new Error(\n      `Failed to parse metadata JSON string: ${e.message}\\n` +\n      `Value: ${item.json.metadata.slice(0, 300)}`\n    );\n  }\n\n  // Flatten fields so Set node can use them easily\n  return {\n    json: {\n      title: parsed.title ?? \"\",\n      hook: parsed.hook ?? \"\",\n      caption_instagram: parsed.caption_instagram ?? \"\",\n      caption_tiktok: parsed.caption_tiktok ?? \"\",\n      caption_youtube: parsed.caption_youtube ?? \"\",\n      fileBase: parsed.path ?? \"\"\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1004,
+        1040
+      ],
+      "id": "ebbe6ab3-4aac-4e82-b555-9d85ad1fcf65",
+      "name": "Parse Metadata"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "metadata",
+        "destinationKey": "metadata",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -1228,
+        1040
+      ],
+      "id": "c2844e2e-48f8-4405-8c95-ae4ca2e08cbb",
+      "name": "Metadata to Text"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Story Paths').item.json.videoPath }}",
+        "options": {
+          "dataPropertyName": "Horrorvideo"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -780,
+        1040
+      ],
+      "id": "bfe778ba-8fc6-4d10-82f5-69b33b228fd5",
+      "name": "Read Video File"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Exact byte count for TikTok's FILE_UPLOAD init (binary.fileSize is a rounded label).\nconst buf = await this.helpers.getBinaryDataBuffer(0, 'Horrorvideo');\nreturn [{ json: { videoSize: buf.length } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1016,
+        1040
+      ],
+      "id": "8f28c309-74e9-4744-8453-4884641d55da",
+      "name": "TT Video Size"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $env.TIKTOK_TOKEN_FILE }}",
+        "options": {
+          "dataPropertyName": "token"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        1240,
+        1040
+      ],
+      "id": "7e1cb9c5-6c4b-436f-bd52-d2b5584a8914",
+      "name": "TT Read Token File",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "binaryPropertyName": "token",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        1464,
+        1040
+      ],
+      "id": "92392fba-3e12-434c-8688-2e9cd6014c1b",
+      "name": "TT Parse Token",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/oauth/token/",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "client_key",
+              "value": "={{ $env.TIKTOK_CLIENT_KEY }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $env.TIKTOK_CLIENT_SECRET }}"
+            },
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            },
+            {
+              "name": "refresh_token",
+              "value": "={{ (Array.isArray($json.data) ? $json.data[0] : $json.data).refresh_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1688,
+        1040
+      ],
+      "id": "c84294e2-3fa7-4347-adb2-66257c8a99b0",
+      "name": "TT Refresh Token",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "11b8205a-3168-4ec3-bd96-e4c5d9997c66",
+              "leftValue": "={{ $json.access_token }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1912,
+        1040
+      ],
+      "id": "a26d5a74-85d4-48fd-aa70-b17bb809a7f0",
+      "name": "TT Token OK?"
+    },
+    {
+      "parameters": {
+        "operation": "toJson",
+        "mode": "once",
+        "options": {
+          "fileName": "tiktok_token.json"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2136,
+        1040
+      ],
+      "id": "ca9c9660-bfda-413c-82ad-2e4c8db81c30",
+      "name": "TT Token To File"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $env.TIKTOK_TOKEN_FILE }}",
+        "dataPropertyName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        2360,
+        1040
+      ],
+      "id": "ed554483-8300-4aeb-8fe6-84e7de5dc4e5",
+      "name": "TT Save Token",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/post/publish/creator_info/query/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('TT Refresh Token').first().json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=UTF-8"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2584,
+        1040
+      ],
+      "id": "08e32dc3-bf2c-452d-a8c4-1183d4974556",
+      "name": "TT Creator Info",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9cff8666-e065-4b66-810e-aab98087baa6",
+              "name": "privacyLevel",
+              "type": "string",
+              "value": "={{ (($json.data?.privacy_level_options || []).includes($('Story Paths').first().json.requestedPrivacy) ? $('Story Paths').first().json.requestedPrivacy : 'SELF_ONLY') }}"
+            },
+            {
+              "id": "38a2cc7e-e5c9-4795-a858-90c9eb1d3075",
+              "name": "title",
+              "type": "string",
+              "value": "={{ (($('Parse Metadata').first().json.caption_tiktok || ($('Parse Metadata').first().json.title + ': ' + $('Parse Metadata').first().json.hook)) + ' #horrorstories #scary #horrortok #creepystories #watchtilltheend #paranormal #fyp').slice(0, 2200) }}"
+            },
+            {
+              "id": "909cec4b-84c0-40c2-b004-2e39f11f481f",
+              "name": "videoSize",
+              "type": "number",
+              "value": "={{ $('TT Video Size').first().json.videoSize }}"
+            },
+            {
+              "id": "7638d9a8-81d5-402d-9d02-ac12e82a395e",
+              "name": "creatorError",
+              "type": "string",
+              "value": "={{ ($json.error?.code && $json.error.code !== 'ok') ? ($json.error.code + ': ' + $json.error.message) : '' }}"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2808,
+        1040
+      ],
+      "id": "b6c9e033-a8e9-47ef-83cc-386dd81391ed",
+      "name": "TT Params"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/post/publish/video/init/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('TT Refresh Token').first().json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=UTF-8"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ post_info: { title: $json.title, privacy_level: $json.privacyLevel, disable_duet: false, disable_comment: false, disable_stitch: false, video_cover_timestamp_ms: 1000 }, source_info: { source: 'FILE_UPLOAD', video_size: $json.videoSize, chunk_size: $json.videoSize, total_chunk_count: 1 } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3032,
+        1040
+      ],
+      "id": "9689a8a8-31d5-41d3-a721-449b48f6c123",
+      "name": "TT Init Post",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// HTTP Request nodes drop input binaries, so re-attach the mp4 for the PUT.\nconst item = $input.first();\nconst src = $('Read Video File').first().binary?.Horrorvideo;\nif (!src) throw new Error('Horrorvideo binary missing');\nif (!item.json.data?.upload_url) throw new Error('TikTok init returned no upload_url: ' + JSON.stringify(item.json).slice(0, 500));\nreturn [{ json: item.json, binary: { Horrorvideo: { ...src, mimeType: 'video/mp4', fileType: 'video/mp4', fileExtension: 'mp4' } } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3256,
+        1040
+      ],
+      "id": "1403ef21-33ac-45f9-a6dc-656e75401427",
+      "name": "TT Attach Video"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.data.upload_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "video/mp4"
+            },
+            {
+              "name": "Content-Range",
+              "value": "=bytes 0-{{ $('TT Params').first().json.videoSize - 1 }}/{{ $('TT Params').first().json.videoSize }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "Horrorvideo",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3480,
+        1040
+      ],
+      "id": "45f028b5-faa6-47d4-8894-deee7781495f",
+      "name": "TT Upload Bytes",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "amount": 20
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3704,
+        1040
+      ],
+      "id": "39500391-72d7-415a-bd9a-c58d44668b16",
+      "name": "TT Wait",
+      "webhookId": "7a083fab-64e5-4dc1-aa9f-73ea0b9e0506"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/post/publish/status/fetch/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('TT Refresh Token').first().json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=UTF-8"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ publish_id: $('TT Init Post').first().json.data.publish_id }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3928,
+        1040
+      ],
+      "id": "149d9bb3-84d1-418d-9351-1cec3b4c6099",
+      "name": "TT Status",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f7d4bf4d-0fa9-4b3d-a097-aa41154dc530",
+                    "leftValue": "={{ $json.data?.status }}",
+                    "rightValue": "PUBLISH_COMPLETE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "complete"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "af7cb8a9-1649-4d3e-aeb7-2a83893bcc0a",
+                    "leftValue": "={{ $json.data?.status }}",
+                    "rightValue": "PROCESSING",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  },
+                  {
+                    "id": "c497ebf5-2494-4215-b1e6-e178f65b7ffe",
+                    "leftValue": "={{ $runIndex }}",
+                    "rightValue": 15,
+                    "operator": {
+                      "type": "number",
+                      "operation": "lt"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "processing"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        4152,
+        1040
+      ],
+      "id": "447a300c-ed19-4654-9392-339c3ea7ad0e",
+      "name": "TT Done?"
+    },
+    {
+      "parameters": {
+        "sendTo": "slimey.ninja2024@gmail.com",
+        "subject": "=TikTok video posted - {{ $('Story Paths').item.json.storyFileName }}",
+        "message": "={{ 'Posted to TikTok as ' + $('TT Params').first().json.privacyLevel + ' (post id ' + (($json.data?.publicaly_available_post_id || [])[0] || 'pending') + ').' + (($('TT Params').first().json.privacyLevel === 'SELF_ONLY') ? '\\n\\nIt is private (Only me) because the app has not passed the Direct Post audit yet. Set TIKTOK_PRIVACY_LEVEL=PUBLIC_TO_EVERYONE in .env once it has.' : '') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        4376,
+        1040
+      ],
+      "id": "906c5c71-5bda-4cf7-a614-3d8b0cd38535",
+      "name": "TT Email Success",
+      "webhookId": "60d08708-76c9-490d-8d7f-2ca907fe3ccd",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "S0wDGIZfHsSLdOKF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "slimey.ninja2024@gmail.com",
+        "subject": "=TikTok publish FAILED - {{ $('Story Paths').item.json.storyFileName }}",
+        "message": "={{ 'TikTok publishing failed for ' + $('Story Paths').item.json.storyFileName + '\\n\\nStage: ' + $prevNode.name + '\\nDetail: ' + ($json.data?.fail_reason || $json.error?.message || $json.error?.description || $json.error_description || $json.creatorError || $json.error?.code || JSON.stringify($json)).slice(0, 2000) + '\\n\\nIf the stage is TT Read Token File / TT Refresh Token the token file is missing or the refresh token expired: re-authorize by hand (docs/SETUP.md, TikTok section) and rewrite ' + ($env.TIKTOK_TOKEN_FILE || 'TIKTOK_TOKEN_FILE') + '.\\nYouTube and Instagram are unaffected; re-publish by POSTing story_number to /webhook/render-complete.' }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        3032,
+        1300
+      ],
+      "id": "230ade9a-8d90-41b0-ae97-c30cd5d8bccf",
+      "name": "TT Email Failure",
+      "webhookId": "e8860ff0-3097-462b-821c-d0da58dba243",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "S0wDGIZfHsSLdOKF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## TikTok — manual / audit workflow\nSame TT nodes as PublishingContent3.0, fed by a form instead of the render webhook. Open the form URL, enter a story number that already has an mp4 in HorrorVideos/, choose a privacy level, press Post to TikTok.\n\nThe chosen level is only used if creator_info/query offers it (unaudited apps get SELF_ONLY only). Needs the same TIKTOK_* keys in .env and the token file from docs/SETUP.md §9.",
+        "height": 260,
+        "width": 600,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1016,
+        1300
+      ],
+      "id": "37c7c7b8-45cc-4360-9c4d-b555cb4633f8",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "Posted to TikTok",
+        "completionMessage": "={{ 'Story ' + $('Story Paths').first().json.storyFileName + ' was published as ' + $('TT Params').first().json.privacyLevel + '. Post id: ' + (($('TT Status').first().json.data?.publicaly_available_post_id || [])[0] || 'pending') + '.' }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [
+        4600,
+        1040
+      ],
+      "id": "f6f35a3f-89f8-4a21-b171-ee9fe678acff",
+      "name": "Show Result",
+      "webhookId": "15072574-4252-4a5b-a52a-715e0c7834a0"
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "TikTok post failed",
+        "completionMessage": "={{ 'Story ' + $('Story Paths').first().json.storyFileName + ' was not posted. A failure email with the TikTok response has been sent.' }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [
+        3256,
+        1300
+      ],
+      "id": "22da2d3b-1f8e-4bef-8db1-4fb0b31f15ae",
+      "name": "Show Failure",
+      "webhookId": "13c8a8da-712c-4656-9d0a-d3727ba6f6b0"
+    }
+  ],
+  "connections": {
+    "Post to TikTok Form": {
+      "main": [
+        [
+          {
+            "node": "Story Paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Story Paths": {
+      "main": [
+        [
+          {
+            "node": "Read Metadata File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Metadata File": {
+      "main": [
+        [
+          {
+            "node": "Metadata to Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Metadata to Text": {
+      "main": [
+        [
+          {
+            "node": "Parse Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Metadata": {
+      "main": [
+        [
+          {
+            "node": "Read Video File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Video File": {
+      "main": [
+        [
+          {
+            "node": "TT Video Size",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Video Size": {
+      "main": [
+        [
+          {
+            "node": "TT Read Token File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Read Token File": {
+      "main": [
+        [
+          {
+            "node": "TT Parse Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Email Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Parse Token": {
+      "main": [
+        [
+          {
+            "node": "TT Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Email Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Refresh Token": {
+      "main": [
+        [
+          {
+            "node": "TT Token OK?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Email Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Token OK?": {
+      "main": [
+        [
+          {
+            "node": "TT Token To File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Email Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Token To File": {
+      "main": [
+        [
+          {
+            "node": "TT Save Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Save Token": {
+      "main": [
+        [
+          {
+            "node": "TT Creator Info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Email Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Creator Info": {
+      "main": [
+        [
+          {
+            "node": "TT Params",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Email Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Params": {
+      "main": [
+        [
+          {
+            "node": "TT Init Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Init Post": {
+      "main": [
+        [
+          {
+            "node": "TT Attach Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Email Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Attach Video": {
+      "main": [
+        [
+          {
+            "node": "TT Upload Bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Upload Bytes": {
+      "main": [
+        [
+          {
+            "node": "TT Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Email Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Wait": {
+      "main": [
+        [
+          {
+            "node": "TT Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Status": {
+      "main": [
+        [
+          {
+            "node": "TT Done?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Email Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Done?": {
+      "main": [
+        [
+          {
+            "node": "TT Email Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Email Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Email Success": {
+      "main": [
+        [
+          {
+            "node": "Show Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Email Failure": {
+      "main": [
+        [
+          {
+            "node": "Show Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "tags": []
+}

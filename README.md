@@ -1,10 +1,13 @@
 # InstagramContent
 
 Automated horror-short pipeline. On a schedule: writes a story with a local LLM,
-narrates it, renders a vertical subtitled video, uploads it to YouTube and Instagram
-Reels, and emails a confirmation for each. YouTube allows roughly six uploads a day on the default API quota;
-when it starts refusing, the publish workflow emails once and stops the whole
-pipeline (`stop-pipeline.ps1`) — restart it with `start-pipeline.ps1` after 07:00 UTC.
+narrates it, renders a vertical subtitled video, uploads it to YouTube, Instagram
+Reels and TikTok, and emails a confirmation for each. (TikTok posts arrive as
+"Only me" and are set to "Everyone" by hand — see `docs/SETUP.md` §9c.) Each platform has a daily
+limit (YouTube's default API quota allows roughly six uploads); when one starts
+refusing, the publish workflow emails once and pauses that platform for 24 h while
+the others keep posting. Only when all three are paused does it stop the whole
+pipeline (`stop-pipeline.ps1`) — restart it with `start-pipeline.ps1`.
 
 ## Start it
 

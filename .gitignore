@@ -33,6 +33,7 @@ __pycache__/
 # --------------------
 HorrorStories/HorrorStory*.txt
 HorrorStories/*.lock
+HorrorStories/*.flag
 HorrorAudio/
 HorrorVideos/
 Metadata/

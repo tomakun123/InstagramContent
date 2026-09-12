@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Starts the whole content pipeline with one command.
 
@@ -266,7 +266,16 @@ Write-Step 'Loading .env'
 $loaded = Import-DotEnv -Path (Join-Path $Root '.env')
 Write-Ok "$loaded variable(s) loaded into environment"
 
-$Model      = if ($env:LMS_MODEL)            { $env:LMS_MODEL }            else { 'qwen2.5-14b-instruct' }
+$Model      = if ($env:LMS_MODEL)            { $env:LMS_MODEL }            else { 'mn-12b-mag-mell-r1' }
+
+# A fresh start means every platform gets another go: PublishingContent pauses a
+# platform for 24 h by dropping HorrorStories/blocked_<platform>.flag after a
+# quota/limit error, and stops everything once all three flags exist.
+$flags = Get-ChildItem (Join-Path $Root 'HorrorStories') -Filter 'blocked_*.flag' -ErrorAction SilentlyContinue
+if ($flags) {
+    $flags | Remove-Item -Force
+    Write-Ok "cleared platform pause flag(s): $($flags.Name -join ', ')"
+}
 $TunnelName = if ($env:CLOUDFLARED_TUNNEL)   { $env:CLOUDFLARED_TUNNEL }   else { $null }
 
 # -- 1. LM Studio ------------------------------------------------------------

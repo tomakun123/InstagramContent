@@ -10,7 +10,7 @@ $secret = (Get-Content "C:\Users\Thomas M\Desktop\InstagramContent\.env" | Where
 
 
 // Posting a webhook manually to publish
-$story = 88
+$story = 115
 $root  = "C:\Users\Thomas M\Desktop\InstagramContent"
 $body  = @{
     story_number    = $story
@@ -19,3 +19,14 @@ $body  = @{
     metadata_path   = "$root\Metadata\HorrorStory$story`_metadata.json"
 } | ConvertTo-Json
 Invoke-RestMethod -Method Post -Uri "https://n8n.thomasmotaisportfolio.net/webhook-test/render-complete" -ContentType "application/json" -Body $body
+
+
+
+// For Tik Tok
+https://www.tiktok.com/v2/auth/authorize/?client_key=aws7qvszby79e1sq&scope=user.info.basic,video.publish&response_type=code&redirect_uri=https://n8n.thomasmotaisportfolio.net/rest/oauth2-credential/callback&state=x
+
+https://n8n.thomasmotaisportfolio.net/rest/oauth2-credential/callback?code=IHAu6KOzNMLEGYTsRF3jyKE00zG82VcVdK_iUT269Dskb1av74rLY0xly_T2QgW7-x2hDixtb1LMEF72vouZKZAwrW2vH0XCUmbUMQQ4J64U-5BuCcCwGwwZKksO_aJEjJ5vJFJROefX_GRja21-e_TXeUob0twKZerxB9Wx_roHkePA_tEhbaOKfkc4_TKHpIE8ocNpN07F9Yr1NKVHu0PHHpGXEPsg_0yKT-XRqRCeTbdHrJ-skvblninSUaXqT1KJjedVtcSEe7-KImIayjw0LQMI-NcmJI1i4Q%2Av%216405.u2&scopes=user.info.basic%2Cvideo.publish&state=x
+
+CODE = IHAu6KOzNMLEGYTsRF3jyKE00zG82VcVdK_iUT269Dskb1av74rLY0xly_T2QgW7-x2hDixtb1LMEF72vouZKZAwrW2vH0XCUmbUMQQ4J64U-5BuCcCwGwwZKksO_aJEjJ5vJFJROefX_GRja21-e_TXeUob0twKZerxB9Wx_roHkePA_tEhbaOKfkc4_TKHpIE8ocNpN07F9Yr1NKVHu0PHHpGXEPsg_0yKT-XRqRCeTbdHrJ-skvblninSUaXqT1KJjedVtcSEe7-KImIayjw0LQMI-NcmJI1i4Q%2Av%216405.u2
+
+$r = Invoke-RestMethod -Method Post -Uri https://open.tiktokapis.com/v2/oauth/token/ -ContentType 'application/x-www-form-urlencoded' -Body @{ client_key = 'aws7qvszby79e1sq'; client_secret = 'ZkXiIRe5vgQW8uPVDf3bb9MNIchSHmYy'; code = 'IHAu6KOzNMLEGYTsRF3jyKE00zG82VcVdK_iUT269Dskb1av74rLY0xly_T2QgW7-x2hDixtb1LMEF72vouZKZAwrW2vH0XCUmbUMQQ4J64U-5BuCcCwGwwZKksO_aJEjJ5vJFJROefX_GRja21-e_TXeUob0twKZerxB9Wx_roHkePA_tEhbaOKfkc4_TKHpIE8ocNpN07F9Yr1NKVHu0PHHpGXEPsg_0yKT-XRqRCeTbdHrJ-skvblninSUaXqT1KJjedVtcSEe7-KImIayjw0LQMI-NcmJI1i4Q%2Av%216405.u2'; grant_type = 'authorization_code'; redirect_uri = 'https://n8n.thomasmotaisportfolio.net/rest/oauth2-credential/callback' }; New-Item -ItemType Directory -Force C:\n8n-data | Out-Null; $r | ConvertTo-Json | Set-Content -Encoding ascii C:\n8n-data\tiktok_token.json; $r.scope

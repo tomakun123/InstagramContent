@@ -55,8 +55,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -112,
-        -48
+        -336,
+        -208
       ],
       "id": "79bb3a11-56a9-4d9c-af8e-20958ec2b608",
       "name": "Build YouTube Body"
@@ -117,7 +117,7 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -240,
+        -480,
         -48
       ],
       "id": "5d9df53f-4996-4673-a31d-8038f1a2b68f",
@@ -389,8 +389,8 @@
     {
       "parameters": {
         "sendTo": "slimey.ninja2024@gmail.com",
-        "subject": "={{ 'Publish FAILED' + ($json.stopPipeline ? ' (upload limit) - pipeline STOPPED' : '') + ' - ' + $('Story Paths').item.json.storyFileName }}",
-        "message": "={{ 'Publishing failed for ' + $('Story Paths').item.json.storyFileName + '\\n\\nError: ' + $json.errorText + '\\n\\n' + ($json.stopPipeline ? 'YouTube is refusing further uploads today, so the whole pipeline (watcher, cloudflared, n8n, LM Studio) has been stopped to avoid generating stories that cannot be posted.\\n\\nRestart once the quota resets (07:00 UTC) with:\\n  .\\\\scripts\\\\start-pipeline.ps1' : 'The video is on disk and the lock has been released.') + '\\n\\nRe-publish by POSTing story_number to /webhook/render-complete.' }}",
+        "subject": "={{ 'Publish FAILED' + ($json.limitHit ? ' (upload limit) - YouTube paused 24 h' : '') + ' - ' + $('Story Paths').item.json.storyFileName }}",
+        "message": "={{ 'Publishing failed for ' + $('Story Paths').item.json.storyFileName + '\\n\\nError: ' + $json.errorText + '\\n\\n' + ($json.limitHit ? 'YouTube is refusing further uploads today, so YouTube is paused for 24 h (HorrorStories/blocked_youtube.flag). Instagram and TikTok keep posting; the whole pipeline stops only when all three platforms are blocked.\\nQuota resets at 07:00 UTC. To resume YouTube earlier, delete the flag.' : 'The video is on disk and the lock has been released.') + '\\n\\nRe-publish by POSTing story_number to /webhook/render-complete.' }}",
         "options": {}
       },
       "type": "n8n-nodes-base.gmail",
@@ -427,7 +427,7 @@
     },
     {
       "parameters": {
-        "content": "## Upload quota is the real ceiling\n\nvideos.insert costs 1,600 units against a 10,000/day default:\nabout **6 uploads per day**.\n\nThe 50-minute cron in ContentGeneration attempts ~28, so most runs 403 on\nquota. That is why both HTTP nodes have an error output routed to\nEmail Failure rather than ending the execution silently.\n\nDo not raise the cron rate to match the faster render.",
+        "content": "## Upload quota is the real ceiling\n\nvideos.insert costs 1,600 units against a 10,000/day default: about **6 uploads per day**, so most runs 403 on quota. Both HTTP nodes route errors to Classify Failure.\n\n**Per-platform pausing.** A limit error creates HorrorStories/blocked_<platform>.flag; Platform Status reads the flags at the start of every run and each lane's *Blocked?* gate skips it for 24 h. Stop Pipeline runs only when all three flags are fresh (All Blocked?). start-pipeline.ps1 clears the flags.",
         "height": 320,
         "width": 470,
         "color": 7
@@ -453,7 +453,7 @@
             },
             {
               "id": "d9afd151-6f08-460b-bfb9-63ad8e69ebfa",
-              "name": "stopPipeline",
+              "name": "limitHit",
               "type": "boolean",
               "value": "={{ /exceeded the number of videos|uploadLimitExceeded|quotaExceeded|dailyLimitExceeded/i.test($json.error?.description || $json.error?.message || JSON.stringify($json.error)) }}"
             }
@@ -483,7 +483,7 @@
           "conditions": [
             {
               "id": "b6fec9a5-3a97-4dd4-ab5e-aa14fa827cd4",
-              "leftValue": "={{ $('Classify Failure').item.json.stopPipeline }}",
+              "leftValue": "={{ $('Classify Failure').item.json.limitHit }}",
               "rightValue": true,
               "operator": {
                 "type": "boolean",
@@ -512,8 +512,8 @@
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        1168,
-        208
+        2064,
+        720
       ],
       "id": "7c95e8af-37a0-4c02-b4c2-402a78b6c16f",
       "name": "Stop Pipeline",
@@ -792,8 +792,8 @@
     {
       "parameters": {
         "sendTo": "slimey.ninja2024@gmail.com",
-        "subject": "=Instagram publish FAILED - {{ $('Story Paths').item.json.storyFileName }}",
-        "message": "={{ 'Instagram publishing failed for ' + $('Story Paths').item.json.storyFileName + '\\n\\nStage: ' + $prevNode.name + '\\nDetail: ' + ($json.error?.description || $json.error?.message || $json.status || JSON.stringify($json)).slice(0, 2000) + '\\n\\nVideo URL given to Meta: ' + $('IG Params').item.json.videoUrl + '\\n\\nIf the detail mentions the media could not be fetched (#9004), check videoServer.py and the tunnel, not the token.\\nThe YouTube branch is unaffected; re-publish by POSTing story_number to /webhook/render-complete.' }}",
+        "subject": "={{ 'Instagram publish FAILED' + ($json.limitHit ? ' (limit) - Instagram paused 24 h' : '') + ' - ' + $('Story Paths').item.json.storyFileName }}",
+        "message": "={{ 'Instagram publishing failed for ' + $('Story Paths').item.json.storyFileName + '\\n\\nStage: ' + $json.stage + '\\nDetail: ' + ($json.error?.description || $json.error?.message || $json.status || JSON.stringify($json)).slice(0, 2000) + '\\n\\nVideo URL given to Meta: ' + $('IG Params').item.json.videoUrl + '\\n\\nIf the detail mentions the media could not be fetched (#9004), check videoServer.py and the tunnel, not the token.\\n' + ($json.limitHit ? 'Instagram hit its posting limit, so it is paused for 24 h (HorrorStories/blocked_instagram.flag); delete the flag to resume earlier.\\n' : '') + 'The other platforms are unaffected; re-publish by POSTing story_number to /webhook/render-complete.' }}",
         "options": {}
       },
       "type": "n8n-nodes-base.gmail",
@@ -814,7 +814,7 @@
     },
     {
       "parameters": {
-        "content": "## Instagram branch\nRuns beside the YouTube branch, not after it. Needs the `Instagram Graph` query-auth credential (access_token) on the four HTTP nodes, and VIDEO_PUBLIC_BASE / VIDEO_URL_SECRET / IG_USER_ID in .env so `$env` resolves them.\n\nMeta downloads the mp4 from videoUrl (served by pipeline/videoServer.py through the tunnel), so the container takes 20-60 s to reach FINISHED. IG Ready? loops through IG Wait up to 15 times, then gives up. Instagram failures email but never trigger Stop Pipeline.",
+        "content": "## Instagram branch\nRuns beside the YouTube branch, not after it. Needs the `Instagram Graph` query-auth credential (access_token) on the four HTTP nodes, and VIDEO_PUBLIC_BASE / VIDEO_URL_SECRET / IG_USER_ID in .env so `$env` resolves them.\n\nMeta downloads the mp4 from videoUrl (served by pipeline/videoServer.py through the tunnel), so the container takes 20-60 s to reach FINISHED. IG Ready? loops through IG Wait up to 15 times, then gives up. A limit error (codes 4/9/17/32/613) pauses Instagram for 24 h via blocked_instagram.flag; Stop Pipeline only fires once all three platforms are paused.",
         "height": 240,
         "width": 560,
         "color": 5
@@ -827,6 +827,860 @@
       ],
       "id": "38774f1c-c3e8-4d0c-8c80-65a664703210",
       "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Exact byte count for TikTok's FILE_UPLOAD init (binary.fileSize is a rounded label).\nconst buf = await this.helpers.getBinaryDataBuffer(0, 'Horrorvideo');\nreturn [{ json: { videoSize: buf.length } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        1040
+      ],
+      "id": "bd763e1c-b99e-40ab-89d8-203f8193de59",
+      "name": "TT Video Size"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $env.TIKTOK_TOKEN_FILE }}",
+        "options": {
+          "dataPropertyName": "token"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -776,
+        1040
+      ],
+      "id": "46f44bef-9a3a-46a1-9104-6fbef5fc677b",
+      "name": "TT Read Token File",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "binaryPropertyName": "token",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -552,
+        1040
+      ],
+      "id": "dabd68c3-f78f-4bb2-9d68-bdb67d2a4aeb",
+      "name": "TT Parse Token",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/oauth/token/",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "client_key",
+              "value": "={{ $env.TIKTOK_CLIENT_KEY }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $env.TIKTOK_CLIENT_SECRET }}"
+            },
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            },
+            {
+              "name": "refresh_token",
+              "value": "={{ (Array.isArray($json.data) ? $json.data[0] : $json.data).refresh_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -328,
+        1040
+      ],
+      "id": "5923d6f1-acbe-4860-bb00-61745c93aca0",
+      "name": "TT Refresh Token",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "11b8205a-3168-4ec3-bd96-e4c5d9997c66",
+              "leftValue": "={{ $json.access_token }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -104,
+        1040
+      ],
+      "id": "4d270c89-070c-4346-85c5-3f97bfda6c5d",
+      "name": "TT Token OK?"
+    },
+    {
+      "parameters": {
+        "operation": "toJson",
+        "mode": "once",
+        "options": {
+          "fileName": "tiktok_token.json"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        120,
+        1040
+      ],
+      "id": "2857599d-b430-4a36-b18a-1349dddda2f6",
+      "name": "TT Token To File"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $env.TIKTOK_TOKEN_FILE }}",
+        "dataPropertyName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        344,
+        1040
+      ],
+      "id": "5eab05a0-598c-41e3-aa3d-473cae9c78fd",
+      "name": "TT Save Token",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/post/publish/creator_info/query/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('TT Refresh Token').first().json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=UTF-8"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        568,
+        1040
+      ],
+      "id": "1c1e77b7-96d0-4690-92b5-e6133dfe53c5",
+      "name": "TT Creator Info",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9cff8666-e065-4b66-810e-aab98087baa6",
+              "name": "privacyLevel",
+              "type": "string",
+              "value": "={{ (($json.data?.privacy_level_options || []).includes($env.TIKTOK_PRIVACY_LEVEL || '') ? $env.TIKTOK_PRIVACY_LEVEL : 'SELF_ONLY') }}"
+            },
+            {
+              "id": "38a2cc7e-e5c9-4795-a858-90c9eb1d3075",
+              "name": "title",
+              "type": "string",
+              "value": "={{ (($('Parse Metadata').first().json.caption_tiktok || ($('Parse Metadata').first().json.title + ': ' + $('Parse Metadata').first().json.hook)) + ' #horrorstories #scary #horrortok #creepystories #watchtilltheend #paranormal #fyp').slice(0, 2200) }}"
+            },
+            {
+              "id": "909cec4b-84c0-40c2-b004-2e39f11f481f",
+              "name": "videoSize",
+              "type": "number",
+              "value": "={{ $('TT Video Size').first().json.videoSize }}"
+            },
+            {
+              "id": "7638d9a8-81d5-402d-9d02-ac12e82a395e",
+              "name": "creatorError",
+              "type": "string",
+              "value": "={{ ($json.error?.code && $json.error.code !== 'ok') ? ($json.error.code + ': ' + $json.error.message) : '' }}"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        792,
+        1040
+      ],
+      "id": "dfbd9425-f6b3-4398-be3c-a02ee10a9c47",
+      "name": "TT Params"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/post/publish/video/init/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('TT Refresh Token').first().json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=UTF-8"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ post_info: { title: $json.title, privacy_level: $json.privacyLevel, disable_duet: false, disable_comment: false, disable_stitch: false, video_cover_timestamp_ms: 1000 }, source_info: { source: 'FILE_UPLOAD', video_size: $json.videoSize, chunk_size: $json.videoSize, total_chunk_count: 1 } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1016,
+        1040
+      ],
+      "id": "62716da0-63c1-4727-8913-650a3f691132",
+      "name": "TT Init Post",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// HTTP Request nodes drop input binaries, so re-attach the mp4 for the PUT.\nconst item = $input.first();\nconst src = $('Read Video File').first().binary?.Horrorvideo;\nif (!src) throw new Error('Horrorvideo binary missing');\nif (!item.json.data?.upload_url) throw new Error('TikTok init returned no upload_url: ' + JSON.stringify(item.json).slice(0, 500));\nreturn [{ json: item.json, binary: { Horrorvideo: { ...src, mimeType: 'video/mp4', fileType: 'video/mp4', fileExtension: 'mp4' } } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1240,
+        1040
+      ],
+      "id": "fbf61b9c-15b5-4d2b-afeb-f452c21bcff1",
+      "name": "TT Attach Video"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.data.upload_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "video/mp4"
+            },
+            {
+              "name": "Content-Range",
+              "value": "=bytes 0-{{ $('TT Params').first().json.videoSize - 1 }}/{{ $('TT Params').first().json.videoSize }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "Horrorvideo",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1464,
+        1040
+      ],
+      "id": "60d3ba2c-206d-4b3b-ad21-a668b9fcf4f2",
+      "name": "TT Upload Bytes",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "amount": 20
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1688,
+        1040
+      ],
+      "id": "51210879-fb11-4f5e-b562-a54ef13690fd",
+      "name": "TT Wait",
+      "webhookId": "25febbc1-082f-463b-ab07-9bb134285724"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/post/publish/status/fetch/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('TT Refresh Token').first().json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=UTF-8"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ publish_id: $('TT Init Post').first().json.data.publish_id }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1912,
+        1040
+      ],
+      "id": "287cb723-b466-4dcb-b76b-ecb9624a86bf",
+      "name": "TT Status",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f7d4bf4d-0fa9-4b3d-a097-aa41154dc530",
+                    "leftValue": "={{ $json.data?.status }}",
+                    "rightValue": "PUBLISH_COMPLETE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "complete"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "af7cb8a9-1649-4d3e-aeb7-2a83893bcc0a",
+                    "leftValue": "={{ $json.data?.status }}",
+                    "rightValue": "PROCESSING",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  },
+                  {
+                    "id": "c497ebf5-2494-4215-b1e6-e178f65b7ffe",
+                    "leftValue": "={{ $runIndex }}",
+                    "rightValue": 15,
+                    "operator": {
+                      "type": "number",
+                      "operation": "lt"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "processing"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2136,
+        1040
+      ],
+      "id": "f0b3eee6-6524-49ba-afe8-db1338df2481",
+      "name": "TT Done?"
+    },
+    {
+      "parameters": {
+        "sendTo": "slimey.ninja2024@gmail.com",
+        "subject": "=TikTok video posted - {{ $('Story Paths').item.json.storyFileName }}",
+        "message": "={{ 'Posted to TikTok as ' + $('TT Params').first().json.privacyLevel + ' (post id ' + (($json.data?.publicaly_available_post_id || [])[0] || 'pending') + ').' + (($('TT Params').first().json.privacyLevel === 'SELF_ONLY') ? '\\n\\nIt is private (Only me) because the app has not passed the Direct Post audit yet. Set TIKTOK_PRIVACY_LEVEL=PUBLIC_TO_EVERYONE in .env once it has.' : '') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2360,
+        1040
+      ],
+      "id": "d2705aee-4758-46b2-b043-afa05c687726",
+      "name": "TT Email Success",
+      "webhookId": "19bef133-3d65-4feb-8301-d6ee25e65bfd",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "S0wDGIZfHsSLdOKF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "slimey.ninja2024@gmail.com",
+        "subject": "={{ 'TikTok publish FAILED' + ($json.limitHit ? ' (limit) - TikTok paused 24 h' : '') + ' - ' + $('Story Paths').item.json.storyFileName }}",
+        "message": "={{ 'TikTok publishing failed for ' + $('Story Paths').item.json.storyFileName + '\\n\\nStage: ' + $json.stage + '\\nDetail: ' + ($json.data?.fail_reason || $json.error?.message || $json.error?.description || $json.error_description || $json.creatorError || $json.error?.code || JSON.stringify($json)).slice(0, 2000) + '\\n\\nIf the stage is TT Read Token File / TT Refresh Token the token file is missing or the refresh token expired: re-authorize by hand (docs/SETUP.md, TikTok section) and rewrite ' + ($env.TIKTOK_TOKEN_FILE || 'TIKTOK_TOKEN_FILE') + '.\\n' + ($json.limitHit ? 'TikTok hit its posting limit, so it is paused for 24 h (HorrorStories/blocked_tiktok.flag); delete the flag to resume earlier.\\n' : '') + 'YouTube and Instagram are unaffected; re-publish by POSTing story_number to /webhook/render-complete.' }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1016,
+        1300
+      ],
+      "id": "5c76669e-d161-4a80-af73-d052bc767287",
+      "name": "TT Email Failure",
+      "webhookId": "62515cc9-9c8c-430f-b5c8-94745dc9e3c9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "S0wDGIZfHsSLdOKF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## TikTok branch\nDirect Post via the Content Posting API, bytes pushed from n8n (FILE_UPLOAD, one chunk; renders are 30-40 MB, the cap is 64 MB). Needs TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET / TIKTOK_TOKEN_FILE / TIKTOK_PRIVACY_LEVEL in .env.\n\nAccess tokens last 24 h, so every run refreshes from the refresh token stored in TIKTOK_TOKEN_FILE and writes the rotated pair back. Until the app passes the Direct Post audit TikTok only allows SELF_ONLY (private) posts; TT Params falls back to SELF_ONLY whenever creator_info does not offer the requested level. A limit error (spam_risk_too_many_posts, rate_limit_exceeded, ...) pauses TikTok for 24 h via blocked_tiktok.flag; Stop Pipeline only fires once all three platforms are paused.",
+        "height": 260,
+        "width": 600,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1000,
+        1300
+      ],
+      "id": "f44d1f19-9983-4bec-b4b1-7b9aefb54b2e",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "command": "powershell -NoProfile -Command \"$d='C:\\Users\\Thomas M\\Desktop\\InstagramContent\\HorrorStories'; (@('youtube','instagram','tiktok') | ForEach-Object { $f = Join-Path $d ('blocked_' + $_ + '.flag'); (Test-Path $f) -and ((Get-Item $f).LastWriteTime -gt (Get-Date).AddHours(-24)) }) -join ','\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -880,
+        -48
+      ],
+      "id": "4c9470e7-9808-4eb4-9f0f-4f4f80812e96",
+      "name": "Platform Status",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Which platforms are paused (blocked_<platform>.flag younger than 24 h). Metadata\n// fields are carried through so downstream $json keeps working unchanged.\nconst parts = ($input.first().json.stdout || '').trim().toLowerCase().split(',');\nconst meta = $('Parse Metadata').first().json;\nreturn [{ json: { ...meta,\n  youtubeBlocked: parts[0] === 'true',\n  instagramBlocked: parts[1] === 'true',\n  tiktokBlocked: parts[2] === 'true' } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -704,
+        -48
+      ],
+      "id": "422d0430-1618-412b-b5bc-44dbcc422443",
+      "name": "Parse Platform Status"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9adcdc52-8e85-47cc-8e24-80e7a06ee8e4",
+              "leftValue": "={{ $('Parse Platform Status').first().json.youtubeBlocked }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -112,
+        -208
+      ],
+      "id": "230c28bb-0fa9-4020-b8d7-825d0b517a54",
+      "name": "YouTube Blocked?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c4d58dfb-b303-4a32-b07b-bedc7bc06852",
+              "leftValue": "={{ $('Parse Platform Status').first().json.instagramBlocked }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -976,
+        480
+      ],
+      "id": "d58ad2ca-8fe8-4a47-a5c7-6b0fa6694d8b",
+      "name": "Instagram Blocked?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c44b1b33-3f57-409b-940f-56ff42f15d0c",
+              "leftValue": "={{ $('Parse Platform Status').first().json.tiktokBlocked }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -776,
+        1040
+      ],
+      "id": "0597daaf-487e-402b-a60d-8aacc11e4d03",
+      "name": "TikTok Blocked?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8ad07b95-7099-4761-98a3-4c97738304cf",
+              "name": "stage",
+              "type": "string",
+              "value": "={{ $prevNode.name }}"
+            },
+            {
+              "id": "0d850ae4-a56c-4058-a9cb-c3eb97529010",
+              "name": "limitHit",
+              "type": "boolean",
+              "value": "={{ /\"code\":\\s*(4|9|17|32|613)\\b|limit|quota|too many/i.test(($json.error?.description || $json.error?.message || $json.status || JSON.stringify($json))) }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        144,
+        720
+      ],
+      "id": "968320e2-5145-4d58-b853-5e9d3b7a481d",
+      "name": "IG Classify Failure"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b1b16dbf-f762-4175-9c77-2c0aba1ba20c",
+              "name": "stage",
+              "type": "string",
+              "value": "={{ $prevNode.name }}"
+            },
+            {
+              "id": "7729011d-30cb-4d48-b439-4ee5528ebf08",
+              "name": "limitHit",
+              "type": "boolean",
+              "value": "={{ /spam_risk_too_many_posts|spam_risk_too_many_pending_share|rate_limit_exceeded|reached_active_user_cap|spam_risk_user_banned_from_posting/i.test(JSON.stringify($json)) }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        792,
+        1300
+      ],
+      "id": "9dd02f47-7c93-41e7-8363-9a58085f57e4",
+      "name": "TT Classify Failure"
+    },
+    {
+      "parameters": {
+        "command": "powershell -NoProfile -Command \"$d='C:\\Users\\Thomas M\\Desktop\\InstagramContent\\HorrorStories'; New-Item -ItemType File -Force (Join-Path $d 'blocked_youtube.flag') | Out-Null; ((@('youtube','instagram','tiktok') | ForEach-Object { $f = Join-Path $d ('blocked_' + $_ + '.flag'); (Test-Path $f) -and ((Get-Item $f).LastWriteTime -gt (Get-Date).AddHours(-24)) }) -notcontains $false)\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1168,
+        208
+      ],
+      "id": "419f3511-d1ec-4525-be71-b000d67c6f6b",
+      "name": "Block YouTube",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "command": "powershell -NoProfile -Command \"$d='C:\\Users\\Thomas M\\Desktop\\InstagramContent\\HorrorStories'; New-Item -ItemType File -Force (Join-Path $d 'blocked_instagram.flag') | Out-Null; ((@('youtube','instagram','tiktok') | ForEach-Object { $f = Join-Path $d ('blocked_' + $_ + '.flag'); (Test-Path $f) -and ((Get-Item $f).LastWriteTime -gt (Get-Date).AddHours(-24)) }) -notcontains $false)\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        816,
+        720
+      ],
+      "id": "9069c2a4-38f6-4be9-ac94-b12382c817bc",
+      "name": "Block Instagram",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "command": "powershell -NoProfile -Command \"$d='C:\\Users\\Thomas M\\Desktop\\InstagramContent\\HorrorStories'; New-Item -ItemType File -Force (Join-Path $d 'blocked_tiktok.flag') | Out-Null; ((@('youtube','instagram','tiktok') | ForEach-Object { $f = Join-Path $d ('blocked_' + $_ + '.flag'); (Test-Path $f) -and ((Get-Item $f).LastWriteTime -gt (Get-Date).AddHours(-24)) }) -notcontains $false)\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1464,
+        1300
+      ],
+      "id": "195fa5d0-67b9-49d0-ae1c-527b8420dd75",
+      "name": "Block TikTok",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d7b524bc-358e-40b8-ae6d-18e504ce58ce",
+              "leftValue": "={{ $('IG Classify Failure').first().json.limitHit }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        592,
+        720
+      ],
+      "id": "f0cd1027-1d0a-4a99-ad86-4e66f0a0d3dc",
+      "name": "IG Is Limit?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "44b35768-5965-4c7c-adb6-8789702d9333",
+              "leftValue": "={{ $('TT Classify Failure').first().json.limitHit }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1240,
+        1300
+      ],
+      "id": "15af6bd3-a04b-418d-b72c-cfedfbdbbc2d",
+      "name": "TT Is Limit?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cbd3bf9f-ae0e-430c-a99d-947795e3d33e",
+              "leftValue": "={{ ($json.stdout || '').trim().toLowerCase() === 'true' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1616,
+        720
+      ],
+      "id": "567728d9-41cf-4b23-b120-f85c78afceae",
+      "name": "All Blocked?"
+    },
+    {
+      "parameters": {
+        "sendTo": "slimey.ninja2024@gmail.com",
+        "subject": "=Pipeline STOPPED - YouTube, Instagram and TikTok are all blocked",
+        "message": "={{ 'All three platforms hit their posting limits within the last 24 h, so the whole pipeline (watcher, cloudflared, video server, n8n, LM Studio) is being stopped to avoid generating stories that cannot be posted.\\n\\nVideos and metadata stay on disk. Restart with:\\n  .\\\\scripts\\\\start-pipeline.ps1\\n\\nThe launcher clears HorrorStories/blocked_*.flag, and each flag expires on its own after 24 h. Re-publish missed stories by POSTing story_number to /webhook/render-complete.' }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1840,
+        720
+      ],
+      "id": "c212a3fe-c317-4e33-90aa-bf559e941f6f",
+      "name": "Email Pipeline Stopped",
+      "webhookId": "c3fc17ed-989c-4c03-9558-ee692c32c88f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "S0wDGIZfHsSLdOKF",
+          "name": "Gmail account"
+        }
+      }
     }
   ],
   "connections": {
@@ -878,17 +1732,7 @@
       "main": [
         [
           {
-            "node": "Metadata Fields",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Release Lock",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "IG Params",
+            "node": "Platform Status",
             "type": "main",
             "index": 0
           }
@@ -924,6 +1768,11 @@
             "node": "Merge Video + Metadata",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "TT Video Size",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -943,14 +1792,9 @@
       "main": [
         [
           {
-            "node": "Start Resumable Upload",
+            "node": "YouTube Blocked?",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "Merge Upload Session",
-            "type": "main",
-            "index": 1
           }
         ]
       ]
@@ -1057,7 +1901,7 @@
       "main": [
         [
           {
-            "node": "Stop Pipeline",
+            "node": "Block YouTube",
             "type": "main",
             "index": 0
           }
@@ -1087,7 +1931,7 @@
         ],
         [
           {
-            "node": "IG Email Failure",
+            "node": "IG Classify Failure",
             "type": "main",
             "index": 0
           }
@@ -1116,7 +1960,7 @@
         ],
         [
           {
-            "node": "IG Email Failure",
+            "node": "IG Classify Failure",
             "type": "main",
             "index": 0
           }
@@ -1141,7 +1985,7 @@
         ],
         [
           {
-            "node": "IG Email Failure",
+            "node": "IG Classify Failure",
             "type": "main",
             "index": 0
           }
@@ -1159,7 +2003,7 @@
         ],
         [
           {
-            "node": "IG Email Failure",
+            "node": "IG Classify Failure",
             "type": "main",
             "index": 0
           }
@@ -1178,6 +2022,442 @@
         [
           {
             "node": "IG Email Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Video Size": {
+      "main": [
+        [
+          {
+            "node": "TikTok Blocked?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Read Token File": {
+      "main": [
+        [
+          {
+            "node": "TT Parse Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Classify Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Parse Token": {
+      "main": [
+        [
+          {
+            "node": "TT Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Classify Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Refresh Token": {
+      "main": [
+        [
+          {
+            "node": "TT Token OK?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Classify Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Token OK?": {
+      "main": [
+        [
+          {
+            "node": "TT Token To File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Classify Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Token To File": {
+      "main": [
+        [
+          {
+            "node": "TT Save Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Save Token": {
+      "main": [
+        [
+          {
+            "node": "TT Creator Info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Classify Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Creator Info": {
+      "main": [
+        [
+          {
+            "node": "TT Params",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Classify Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Params": {
+      "main": [
+        [
+          {
+            "node": "TT Init Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Init Post": {
+      "main": [
+        [
+          {
+            "node": "TT Attach Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Classify Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Attach Video": {
+      "main": [
+        [
+          {
+            "node": "TT Upload Bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Upload Bytes": {
+      "main": [
+        [
+          {
+            "node": "TT Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Classify Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Wait": {
+      "main": [
+        [
+          {
+            "node": "TT Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Status": {
+      "main": [
+        [
+          {
+            "node": "TT Done?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Classify Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Done?": {
+      "main": [
+        [
+          {
+            "node": "TT Email Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TT Classify Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Platform Status": {
+      "main": [
+        [
+          {
+            "node": "Parse Platform Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Platform Status": {
+      "main": [
+        [
+          {
+            "node": "Metadata Fields",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Release Lock",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Instagram Blocked?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube Blocked?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Start Resumable Upload",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Upload Session",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Instagram Blocked?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "IG Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TikTok Blocked?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "TT Read Token File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IG Classify Failure": {
+      "main": [
+        [
+          {
+            "node": "IG Email Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Classify Failure": {
+      "main": [
+        [
+          {
+            "node": "TT Email Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Block YouTube": {
+      "main": [
+        [
+          {
+            "node": "All Blocked?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IG Email Failure": {
+      "main": [
+        [
+          {
+            "node": "IG Is Limit?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IG Is Limit?": {
+      "main": [
+        [
+          {
+            "node": "Block Instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Block Instagram": {
+      "main": [
+        [
+          {
+            "node": "All Blocked?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Email Failure": {
+      "main": [
+        [
+          {
+            "node": "TT Is Limit?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TT Is Limit?": {
+      "main": [
+        [
+          {
+            "node": "Block TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Block TikTok": {
+      "main": [
+        [
+          {
+            "node": "All Blocked?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "All Blocked?": {
+      "main": [
+        [
+          {
+            "node": "Email Pipeline Stopped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Pipeline Stopped": {
+      "main": [
+        [
+          {
+            "node": "Stop Pipeline",
             "type": "main",
             "index": 0
           }

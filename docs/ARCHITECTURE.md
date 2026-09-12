@@ -3,7 +3,7 @@
 An automated faceless-content pipeline. On a schedule (30 minutes on the live
 instance; the export says 50) it writes a horror story
 with a locally-hosted LLM, narrates it, renders a vertical subtitled Short, uploads
-it to YouTube, and emails a confirmation — unattended.
+it to YouTube, Instagram Reels and TikTok, and emails a confirmation — unattended.
 
 Everything runs on one Windows PC (RTX 3050). n8n handles orchestration; Python
 handles media. They coordinate through shared files plus one webhook.
@@ -12,10 +12,11 @@ handles media. They coordinate through shared files plus one webhook.
 
 | Piece | What it does |
 |---|---|
-| **LM Studio** (`:1234`) | Serves `qwen2.5-14b-instruct` behind an OpenAI-compatible API. Both n8n LLM nodes point at it. |
+| **LM Studio** (`:1234`) | Serves the story model (`LMS_MODEL`, currently MN-12B-Mag-Mell) behind an OpenAI-compatible API. Both n8n LLM nodes point at it. |
 | **n8n** (`:5678`) | Orchestration. Workflows: `ContentGeneration3.0`, `PublishingContent3.0`, `PromptHorrorGeneration`, plus the monthly `InstagramTokenRefresh`. |
 | **cloudflared** | Named tunnel exposing n8n on a subdomain (OAuth callbacks) and the video server on a second one (Instagram fetches the mp4 from it). |
 | **`pipeline/videoServer.py`** (`:8090`) | Serves `HorrorVideos/*.mp4` at `/v/<secret>/<name>.mp4` with Range support. Only runs when `VIDEO_URL_SECRET` is set. |
+| **`TIKTOK_TOKEN_FILE`** (`C:\n8n-data\tiktok_token.json`) | The TikTok access/refresh token pair. Read and rewritten by the TikTok lane on every run. |
 | **`pipeline/storyWatcher.py`** | Watches `Metadata/`. A new JSON there means "a story is ready" and triggers the render. |
 | **`pipeline/generateContent.py`** | TTS → music mix → ffmpeg render, in one pass. ~17 seconds per video. |
 
@@ -32,13 +33,16 @@ Schedule Trigger (every 50 min)  /  manual "Execute workflow"
         │
    read counter.txt -> n = n + 1   (held in memory, NOT yet written)
         │
-   PromptHorrorGeneration (sub-workflow, multi-prompt story generation)
+   PromptHorrorGeneration (sub-workflow: rolls one of 18 horror subgenres,
+        │                     realistic or supernatural, then one LLM call
+        │                     with a matching worked example; ~170 words)
         │
    write HorrorStories/HorrorStory{n}.txt
         │
    Commit Counter -> write counter.txt      ← only after the story exists, so a
         │                                     failed run does not burn a number
-   Generate Metadata (qwen -> strict JSON: title, hook, captions per platform)
+   Generate Metadata (LLM -> strict JSON: title, hook, captions per platform;
+        │                     parser tolerates fences and leaked EOS/[TOOL_CALLS] trailers)
         │
    write Metadata/HorrorStory{n}_metadata.json  ★ HANDOFF  (workflow ends here)
                                                    │
@@ -56,24 +60,46 @@ Schedule Trigger (every 50 min)  /  manual "Execute workflow"
         ├─ Story Paths        ← story name and both file paths come from the POST
         │                        body; counter.txt is never re-read
         ├─ Read Metadata File / Metadata to Text / Parse Metadata
+        ├─ Platform Status    ← reads HorrorStories/blocked_<platform>.flag (fresh < 24 h)
+        │                        so each lane below can skip a paused platform
         ├─ Release Lock       ← deletes generate_lock.lock, before the upload, so
         │                        the mutex is freed even if publishing fails
         ├─ Read Video File
+        ├─ YouTube Blocked?   ← skips the lane while blocked_youtube.flag is fresh
         ├─ Start Resumable Upload  (POST googleapis session)   ──error─┐
         ├─ Upload Video Bytes      (PUT the bytes)             ──error─┤
         ├─ Update a video     → real title, description, tags, public ──error─┤
         ├─ Email Success      → Gmail with the /shorts/{id} link           │
         ├─ Classify Failure   ← errorText + stopPipeline (quota/limit regex) ┘
         ├─ Email Failure
-        ├─ Is Upload Limit?  ──true──▶ Stop Pipeline (detached stop-pipeline.ps1)
+        ├─ Is Upload Limit?  ──true──▶ Block YouTube (writes the flag) ──▶ All Blocked?
+        │                                 All Blocked? ──true──▶ Email Pipeline Stopped
+        │                                                       ──▶ Stop Pipeline
         │
-        └─ Instagram lane (forks from Parse Metadata, runs beside YouTube)
-             ├─ IG Params           videoUrl = VIDEO_PUBLIC_BASE/v/<secret>/<story>.mp4
-             ├─ IG Create Container POST graph.instagram.com/{ig}/media  media_type=REELS
-             ├─ IG Wait 20 s ⇄ IG Container Status ⇄ IG Ready?   (≤15 polls)
-             ├─ IG Publish          POST /{ig}/media_publish
-             ├─ IG Permalink → IG Email Success
-             └─ IG Email Failure    (never routes into Stop Pipeline)
+        ├─ Instagram lane (forks from Platform Status, runs beside YouTube)
+        │    ├─ Instagram Blocked?  skip while blocked_instagram.flag is fresh
+        │    ├─ IG Params           videoUrl = VIDEO_PUBLIC_BASE/v/<secret>/<story>.mp4
+        │    ├─ IG Create Container POST graph.instagram.com/{ig}/media  media_type=REELS
+        │    ├─ IG Wait 20 s ⇄ IG Container Status ⇄ IG Ready?   (≤15 polls)
+        │    ├─ IG Publish          POST /{ig}/media_publish
+        │    ├─ IG Permalink → IG Email Success
+        │    ├─ IG Classify Failure → IG Email Failure
+        │    └─ IG Is Limit? ──true──▶ Block Instagram ──▶ All Blocked?
+        │
+        └─ TikTok lane (forks from Read Video File — it needs the bytes)
+             ├─ TT Video Size       exact byte count from the binary
+             ├─ TikTok Blocked?     skip while blocked_tiktok.flag is fresh
+             ├─ TT Read Token File / TT Parse Token     TIKTOK_TOKEN_FILE
+             ├─ TT Refresh Token    POST open.tiktokapis.com/v2/oauth/token/  (24 h tokens)
+             ├─ TT Token OK? → TT Token To File → TT Save Token   (rotated pair written back)
+             ├─ TT Creator Info     POST /v2/post/publish/creator_info/query/
+             ├─ TT Params           privacy = TIKTOK_PRIVACY_LEVEL if offered, else SELF_ONLY
+             ├─ TT Init Post        POST /v2/post/publish/video/init/  FILE_UPLOAD, 1 chunk
+             ├─ TT Attach Video → TT Upload Bytes   PUT upload_url, Content-Range
+             ├─ TT Wait 20 s ⇄ TT Status ⇄ TT Done?   (≤15 polls)
+             ├─ TT Email Success
+             ├─ TT Classify Failure → TT Email Failure
+             └─ TT Is Limit? ──true──▶ Block TikTok ──▶ All Blocked?
 
 All three YouTube nodes use `onError: continueErrorOutput`. `videos.insert` costs
 1,600 quota units against a 10,000/day default — roughly six uploads a day — so
@@ -81,12 +107,18 @@ All three YouTube nodes use `onError: continueErrorOutput`. `videos.insert` cost
 failure, not an exceptional one. Because the error branch completes normally, n8n
 records such a run as **success**; the failure email is the real signal.
 
-When the failure is the upload limit, `Stop Pipeline` launches
-`scripts/stop-pipeline.ps1` detached (5 s delay so the email and the execution
-record land first). The script kills the n8n process that is running the node,
-which is why it must not be invoked synchronously. Restart with
-`start-pipeline.ps1` after the quota resets at 07:00 UTC. Any other failure just
-emails and leaves the pipeline running.
+Limits are handled **per platform**. A limit error (YouTube quota regex; Instagram
+codes 4/9/17/32/613; TikTok `spam_risk_too_many_posts`, `rate_limit_exceeded`, …)
+writes `HorrorStories/blocked_<platform>.flag`. `Platform Status` reads the three
+flags at the start of every run and each lane's `… Blocked?` gate skips the lane
+silently while its flag is younger than 24 h, so one platform running out of
+quota never stops the others. Only when all three flags are fresh does
+`All Blocked?` send one "Pipeline STOPPED" email and launch `Stop Pipeline`,
+which runs `scripts/stop-pipeline.ps1` detached (5 s delay so the email and the
+execution record land first; the script kills the n8n process running the node,
+which is why it must not be invoked synchronously). `start-pipeline.ps1` clears
+the flags; deleting one by hand resumes that platform early. Any other failure
+just emails and leaves the pipeline running.
 
 `Merge Upload Session` has `includeUnpaired: false` on purpose: with it on, the
 error item from a failed session start was paired with the metadata item and
@@ -138,11 +170,12 @@ succeeded, and which story it was.
 - **Webhook POST fails** → the video is already finalised on disk; the run logs a
   warning and does not fail. Publish it by hand by re-POSTing, or re-run with
   `--story N --notify`.
-- **YouTube refuses the upload (daily limit / quota)** → one failure email, then
-  the whole pipeline is stopped so it does not keep burning LLM/render cycles on
-  stories that cannot be posted. The video and metadata stay on disk; re-POST
-  `/webhook/render-complete` after restarting. Any other publish error emails and
-  keeps running.
+- **A platform refuses the post (daily limit / quota)** → one failure email, then
+  that platform is paused for 24 h (`HorrorStories/blocked_<platform>.flag`) while
+  the others keep posting. When all three are paused the whole pipeline is stopped
+  so it does not keep burning LLM/render cycles on stories that cannot be posted.
+  Videos and metadata stay on disk; re-POST `/webhook/render-complete` after
+  restarting. Any other publish error emails and keeps running.
 - **Instagram container never reaches FINISHED / #9004 "media could not be
   fetched"** → Meta could not download the mp4: the video server or the tunnel
   hostname is down. Emails and keeps running; YouTube is unaffected.
@@ -150,6 +183,16 @@ succeeded, and which story it was.
   60 days; `InstagramTokenRefresh` renews monthly and emails the new value, which
   has to be pasted into the credential. If it lapsed, generate a fresh one in the
   Meta app.
+- **TikTok refresh fails** (file missing, refresh token expired or revoked) → one
+  failure email naming `TT Refresh Token`; re-authorize by hand (SETUP §9b) and
+  rewrite the token file. Nothing else is affected.
+- **TikTok post is private** → by design. The app is unaudited (TikTok does not
+  audit tools that post to the developer's own account, SETUP §9c), so every post
+  is `SELF_ONLY` and is switched to "Everyone" by hand in TikTok Studio. `TT
+  Params` downgrades to `SELF_ONLY` whenever `creator_info` does not offer the
+  requested level, and the success email says so.
+- **Video over 64 MB** → TikTok rejects the single-chunk init; the lane emails and
+  keeps running. Renders are 30–40 MB today; multi-chunk upload is not implemented.
 
 ## Manual operation
 

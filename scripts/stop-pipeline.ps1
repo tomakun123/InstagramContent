@@ -77,6 +77,16 @@ foreach ($name in $order) {
                     $stopped = $true
                 }
             }
+            'n8n' {
+                # n8n started by hand (or by an older launcher) is not in pids.json; find it
+                # by the port it listens on, since its process name is just node.exe.
+                $conn = Get-NetTCPConnection -LocalPort 5678 -State Listen -ErrorAction SilentlyContinue
+                foreach ($ownerPid in ($conn | Select-Object -ExpandProperty OwningProcess -Unique)) {
+                    Stop-Process -Id $ownerPid -Force -ErrorAction SilentlyContinue
+                    Write-Ok "stopped pid $ownerPid (matched by port 5678)"
+                    $stopped = $true
+                }
+            }
             'cloudflared' {
                 $procs = Get-Process -Name 'cloudflared' -ErrorAction SilentlyContinue
                 foreach ($p in $procs) {
