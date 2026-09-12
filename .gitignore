@@ -61,3 +61,6 @@ package-lock.json
 *.tmp
 *.swp
 *.orig
+
+/run_scripts.txt
+C:\Users\Thomas M\Desktop\InstagramContent\run_scripts.txt
