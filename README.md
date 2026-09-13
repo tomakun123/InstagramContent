@@ -26,11 +26,12 @@ dependency order, with health checks. Safe to run twice.
 ## Layout
 
 ```
-pipeline/    generateContent.py (TTS -> music -> render), storyWatcher.py, videoServer.py, paths.py
+pipeline/    generateContent.py (TTS -> AI background -> music -> render), beats.py,
+             visualPrompts.py, clips.py, storyWatcher.py, videoServer.py, paths.py
 scripts/     start/stop launchers
 workflows/   n8n workflow exports
 docs/        architecture, setup, benchmarks
-assets/      background video, music, subtitle font
+assets/      fallback background video, music, subtitle font, ComfyUI workflow (comfy/)
 web/         privacy/ToS pages required for platform API review
 
 HorrorStories/ HorrorAudio/ HorrorVideos/ Metadata/   runtime output (gitignored)

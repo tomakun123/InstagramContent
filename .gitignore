@@ -36,6 +36,7 @@ HorrorStories/*.lock
 HorrorStories/*.flag
 HorrorAudio/
 HorrorVideos/
+HorrorVideos/clips/
 Metadata/
 logs/
 version1/

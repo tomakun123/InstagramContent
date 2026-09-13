@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     Reads logs/pids.json and stops each service in reverse dependency order
-    (watcher -> cloudflared -> video server -> n8n -> LM Studio), then clears a stale
+    (watcher -> ComfyUI -> cloudflared -> video server -> n8n -> LM Studio), then clears a stale
     generate_lock.lock if one was left behind by an interrupted run.
 
 .PARAMETER KeepLock
@@ -27,7 +27,7 @@ function Write-Ok   { param($m) Write-Host "    OK   $m" -ForegroundColor Green 
 function Write-Skip { param($m) Write-Host "    SKIP $m" -ForegroundColor DarkGray }
 
 # Reverse dependency order: stop consumers before the things they depend on.
-$order = @('watcher', 'cloudflared', 'videoserver', 'n8n', 'lmstudio')
+$order = @('watcher', 'comfyui', 'cloudflared', 'videoserver', 'n8n', 'lmstudio')
 
 $pids = @{}
 if (Test-Path $PidFile) {
@@ -87,6 +87,15 @@ foreach ($name in $order) {
                     $stopped = $true
                 }
             }
+            'comfyui' {
+                # Same story as n8n: its process is the portable build's python.exe.
+                $conn = Get-NetTCPConnection -LocalPort 8188 -State Listen -ErrorAction SilentlyContinue
+                foreach ($ownerPid in ($conn | Select-Object -ExpandProperty OwningProcess -Unique)) {
+                    Stop-Process -Id $ownerPid -Force -ErrorAction SilentlyContinue
+                    Write-Ok "stopped pid $ownerPid (matched by port 8188)"
+                    $stopped = $true
+                }
+            }
             'cloudflared' {
                 $procs = Get-Process -Name 'cloudflared' -ErrorAction SilentlyContinue
                 foreach ($p in $procs) {
@@ -121,7 +130,7 @@ if (Test-Path $Lock) {
 
 # Report anything still holding the ports, so a follow-up start is not surprised.
 Write-Host ''
-foreach ($port in @(1234, 5678, 8090)) {
+foreach ($port in @(1234, 5678, 8090, 8188)) {
     $conn = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
     if ($conn) {
         Write-Host "WARNING: port $port is still listening (pid $($conn[0].OwningProcess))" -ForegroundColor Yellow

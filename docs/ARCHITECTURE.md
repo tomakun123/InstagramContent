@@ -17,8 +17,9 @@ handles media. They coordinate through shared files plus one webhook.
 | **cloudflared** | Named tunnel exposing n8n on a subdomain (OAuth callbacks) and the video server on a second one (Instagram fetches the mp4 from it). |
 | **`pipeline/videoServer.py`** (`:8090`) | Serves `HorrorVideos/*.mp4` at `/v/<secret>/<name>.mp4` with Range support. Only runs when `VIDEO_URL_SECRET` is set. |
 | **`TIKTOK_TOKEN_FILE`** (`C:\n8n-data\tiktok_token.json`) | The TikTok access/refresh token pair. Read and rewritten by the TikTok lane on every run. |
+| **ComfyUI** (`:8188`, optional) | Generates one background shot per story beat: a Flux.1-schnell still (default, animated with a slow camera move) or a Wan 2.2 5B clip. Driven over its HTTP API by `pipeline/clips.py`. Absent → Minecraft footage. |
 | **`pipeline/storyWatcher.py`** | Watches `Metadata/`. A new JSON there means "a story is ready" and triggers the render. |
-| **`pipeline/generateContent.py`** | TTS → music mix → ffmpeg render, in one pass. ~17 seconds per video. |
+| **`pipeline/generateContent.py`** | TTS → AI background (beats → shot prompts → shots) → music mix → ffmpeg render. ~17 s without the AI step; with it, ~1 min per beat (image style) or ~4.6 min per beat (video style). |
 
 ## The flow
 
@@ -50,11 +51,21 @@ Schedule Trigger (every 50 min)  /  manual "Execute workflow"
                                                    │
                                          generateContent.py
                                            1. edge_tts narration + word timings
-                                           2. ffmpeg music mix
-                                           3. ffmpeg: crop 9:16, scale, burn in
+                                           2. AI background (skipped/fallback -> Minecraft)
+                                              a. beats.py: 10-15 s beats on sentence ends
+                                              b. visualPrompts.py: one LM Studio call,
+                                                 a shot description per beat
+                                              c. lms unload --all        (7 GB of 8 freed)
+                                              d. clips.py: ComfyUI /prompt per beat ->
+                                                 image: Flux still + ffmpeg Ken Burns
+                                                 video: Wan clip, ping-pong + stretch
+                                                 concat -> clips/<n>/background.mp4
+                                              e. ComfyUI /free, lms load  (GPU handed back)
+                                           3. ffmpeg music mix
+                                           4. ffmpeg: crop 9:16, scale, burn in
                                               subtitles (libass), NVENC encode
-                                           4. write .part.mp4, rename -> .mp4
-                                           5. POST N8N_RENDER_WEBHOOK  ★ DONE SIGNAL
+                                           5. write .part.mp4, rename -> .mp4
+                                           6. POST N8N_RENDER_WEBHOOK  ★ DONE SIGNAL
                                                    │
    PublishingContent3.0  (Webhook trigger, /webhook/render-complete)
         ├─ Story Paths        ← story name and both file paths come from the POST
@@ -139,6 +150,37 @@ The lock being released by the *publish* workflow rather than the generate workf
 is deliberate: the gate stays shut for the entire generate → render → publish
 cycle, not just the generate step.
 
+### The GPU handoff
+
+The RTX 3050 has 8 GB; the story model takes 7 of them and Wan 2.2 5B needs
+most of the card too. They cannot coexist, so `generateContent.py` sequences
+them: it asks the story model for the shot prompts *first*, then
+`lms unload --all`, generates every clip, asks ComfyUI to drop its models
+(`POST /free`), and `lms load`s the story model again before the render. The
+lock above is what makes this safe — no n8n LLM call can arrive while the
+story model is unloaded, because the generate workflow is blocked until the
+publish workflow releases the lock, which happens after the render.
+
+### Why stills by default
+
+A Flux.1-schnell still at 896x1600 is only upscaled 1.2x to the output
+frame and takes ~1 min; a Wan 2.2 5B clip the RTX 3050 can produce in
+reasonable time is 480x832, upscaled 2.25x, and takes ~5 min. Under
+burned-in subtitles a sharp frame with a slow push-in reads as higher
+production value than soft real motion, so `image` is the default and
+`video` stays available per run (`--style video`) or globally
+(`BACKGROUND_STYLE`).
+
+### Why the video clips are ping-ponged
+
+Wan 2.2 5B produces ~3.4 s (81 frames at 480x832 — the geometry the RTX 3050
+can do in ~4.6 min; see SETUP §10d) per generation and a beat is 10–15 s.
+Rather than three or four generations per beat, `clips.fit_to_duration` plays
+the clip forward then backward (seamless — the reversal starts on the frame it
+ended on), repeats that loop as often as the beat needs, and stretches the
+remainder by at most 1.5x. On slow atmospheric footage the reversal is
+invisible; it keeps the cost at one generation per beat.
+
 ### Why a webhook rather than a timer
 
 ContentGenerate used to `Wait` 25 minutes, then read `HorrorStory{n}.part.mp4`
@@ -167,6 +209,12 @@ succeeded, and which story it was.
   LM Studio was down.)
 - **Render fails** → `generateContent.py` exits non-zero, no webhook fires, nothing
   is published. The lock stays until the next cron tick clears it.
+- **Background generation fails** (ComfyUI down, model file missing, clip
+  timeout, ffmpeg error in the stitch) → `[!] AI background failed (...)` in the
+  log, the story model is reloaded, and the render proceeds over the Minecraft
+  footage. Publishing is unaffected; the webhook payload carries
+  `"background": "image" | "video" | "minecraft"` so the outcome is visible
+  from n8n.
 - **Webhook POST fails** → the video is already finalised on disk; the run logs a
   warning and does not fail. Publish it by hand by re-POSTing, or re-run with
   `--story N --notify`.
@@ -205,6 +253,12 @@ python .\pipeline\generateContent.py --story 36 --notify
 
 # Compare the ffmpeg renderer against the old MoviePy one
 python .\pipeline\generateContent.py --story 36 --renderer moviepy
+
+# Skip the AI background for this one render
+python .\pipeline\generateContent.py --story 36 --background minecraft
+
+# Print the beats a story would be split into, without rendering
+python .\pipeline\beats.py 36
 ```
 
 ## Related docs

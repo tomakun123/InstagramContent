@@ -34,6 +34,7 @@ Logs land in `logs/<service>-<date>.out.log` and `.err.log`.
 | Node + n8n | `npm i -g n8n` (do **not** install it into this repo) |
 | LM Studio | https://lmstudio.ai — install the `lms` CLI so the launcher can drive it |
 | cloudflared | https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/ |
+| ComfyUI (optional) | Generates the AI backgrounds; see §10. Without it videos render over the Minecraft footage. |
 
 ### 2. Python environment
 
@@ -50,7 +51,8 @@ system Python.
 `assets/` holds the static inputs. The two large ones are gitignored and must be
 present locally:
 
-- `assets/MCParkour.mp4` — background gameplay footage (~2.3 GB)
+- `assets/MCParkour.mp4` — fallback background gameplay footage (~2.3 GB); used
+  when ComfyUI is not configured or a generation fails
 - `assets/musicOutput.mp3` — background music bed
 - `assets/use.ttf` — subtitle font (tracked in git)
 
@@ -65,7 +67,15 @@ WEBHOOK_URL=https://<your-subdomain>
 
 # Launcher
 CLOUDFLARED_TUNNEL=<tunnel-name>        # optional; ~/.cloudflared/config.yml is used if unset
-LMS_MODEL=qwen2.5-14b-instruct          # optional, this is the default; see §5 for the model we actually use
+LMS_MODEL=mn-12b-mag-mell-r1            # optional, this is the default; see §5
+
+# AI backgrounds (optional - leave COMFYUI_DIR unset for the Minecraft footage). See §10.
+COMFYUI_DIR=C:\ComfyUI_windows_portable  # the launcher starts ComfyUI from here
+COMFYUI_URL=http://127.0.0.1:8188        # optional, this is the default
+BACKGROUND_MODE=ai                       # ai (default) | minecraft
+BACKGROUND_STYLE=image                   # image (default, Flux still + camera move) | video (Wan clip)
+#COMFY_UNET=...                          # optional: a different Wan 2.2 5B checkpoint file name
+#COMFY_WIDTH=704 / COMFY_HEIGHT=1280 / COMFY_LENGTH=121   # optional: model-native geometry, ~5x slower on a 3050
 
 # Render -> publish handoff. generateContent.py POSTs here when a render
 # finishes, which is what triggers PublishingContent2.0. If unset, videos are
@@ -260,7 +270,99 @@ runs the same `TT …` nodes.
 If the refresh token ever expires or is revoked, the lane emails "TikTok publish
 FAILED … Stage: TT Refresh Token"; repeat step b.
 
-### 10. Public hosting
+### 10. AI backgrounds (ComfyUI + Flux / Wan 2.2)
+
+`generateContent.py` splits each narration into 10–15 s beats, asks the story
+model for a shot description per beat, and generates one shot per beat in
+ComfyUI. Two styles, chosen by `BACKGROUND_STYLE` in `.env` (or `--style`):
+
+| Style | Model | Per beat | Look |
+|---|---|---|---|
+| **`image`** (default) | Flux.1-schnell still, animated with a slow ffmpeg push-in / pull-out / pan | ~1 min | sharp 1080x1920, cinematic still |
+| `video` | Wan 2.2 TI2V-5B clip, ping-ponged to the beat length | ~5 min | real motion, soft (480p upscaled) |
+
+The shots are stitched and the subtitles are rendered over them instead of
+the Minecraft footage. Everything is local; the step costs nothing but GPU
+time.
+
+**a. Install ComfyUI.** Use the *portable* Windows build — it bundles its own
+Python (this repo's interpreter is 3.14, which ComfyUI does not support) and
+needs no install: https://github.com/comfyanonymous/ComfyUI/releases → download
+`ComfyUI_windows_portable_nvidia.7z`, extract to e.g. `C:\ComfyUI_windows_portable`.
+
+**b. Download the model files** into the portable build's `ComfyUI\models\`
+tree. All repos are under https://huggingface.co/Comfy-Org/.
+
+For the `image` style (one file, 17.2 GB — unet, T5, CLIP and VAE in one):
+
+| File | From repo | Goes in |
+|---|---|---|
+| `flux1-schnell-fp8.safetensors` | `flux1-schnell` | `models\checkpoints\` |
+
+For the `video` style (~18 GB, the files sit in each repo's `split_files/`):
+
+| File | From repo | Goes in |
+|---|---|---|
+| `wan2.2_ti2v_5B_fp16.safetensors` | `Wan_2.2_ComfyUI_Repackaged` → `split_files/diffusion_models/` | `models\diffusion_models\` |
+| `umt5_xxl_fp8_e4m3fn_scaled.safetensors` | `Wan_2.1_ComfyUI_repackaged` → `split_files/text_encoders/` | `models\text_encoders\` |
+| `wan2.2_vae.safetensors` | `Wan_2.2_ComfyUI_Repackaged` → `split_files/vae/` | `models\vae\` |
+
+These are the exact names in `assets/comfy/flux_schnell_t2i_api.json` and
+`assets/comfy/wan22_5b_t2v_api.json`. Flux.1-schnell is Apache-2.0 (fine for
+a monetised channel; Flux *dev* is not). A different Wan 5B checkpoint can be
+used without editing the workflow by setting `COMFY_UNET=<file name>`.
+
+**c. Set `COMFYUI_DIR` in `.env`** and restart the pipeline. The launcher starts
+ComfyUI on `:8188`; `generateContent.py` finds it through `COMFYUI_URL`.
+
+**d. Benchmark one shot before trusting the schedule.** With the pipeline
+stopped (so LM Studio is not holding the VRAM) and ComfyUI running:
+
+```powershell
+python .\pipeline\clips.py "a dark forest trail at night, fog"            # image style
+python .\pipeline\clips.py --video "a dark forest trail at night, fog"    # video style
+```
+
+It runs the exact workflow the pipeline uses and prints the seconds per shot.
+Measured on the RTX 3050 (8 GB) for the video style, 20 steps, fp16 weights:
+
+| Geometry | Step time | Per clip | Per 4-beat story |
+|---|---|---|---|
+| 704x1280 × 121 frames (model native) | ~58 s | ~25 min | ~100 min — too slow |
+| **480x832 × 81 frames (default)** | ~11 s | **~4.6 min** | **~18 min** |
+
+The card is compute-bound at this size: casting the weights to fp8 changed
+nothing (same step time) and, on the 5B model, produced flat near-black clips,
+so the workflow keeps `weight_dtype: default` (fp16). Override the geometry
+with `COMFY_WIDTH` / `COMFY_HEIGHT` / `COMFY_LENGTH` in `.env` if a faster GPU
+turns up; the render upscales to 1080x1920 either way.
+
+Two things about the ComfyUI web UI (http://127.0.0.1:8188): after
+downloading models, reload the tab or the "Missing Models" banner shows a
+stale list; and the ✕ next to *Run* cancels whatever the server is executing —
+the pipeline's clip included — so use the UI for experiments only while no
+story is rendering. A cancelled clip is retried once with a new seed; if that
+fails too, the story falls back to the Minecraft footage.
+
+**e. Cadence.** Generation is the new long pole (≈ 4 × clip time per story).
+Set the `Schedule Trigger` interval in `ContentGeneration3.0` so a run finishes
+before the next starts — ~96 minutes for 15 stories a day gives ~5× headroom
+at the default geometry.
+
+VRAM: the RTX 3050 has 8 GB and the story model holds 7 of them, so
+`generateContent.py` unloads it (`lms unload --all`) after the shot prompts are
+written, generates, then reloads it (`lms load`). The `generate_lock.lock`
+mutex already stops n8n from prompting the model while a render is in flight.
+If anything in the generation step fails — ComfyUI down, a timeout, an ffmpeg
+error — the log shows `[!] AI background failed (...)` and the video is
+rendered over the Minecraft footage and published as normal. Force that path
+for one render with `--background minecraft`.
+
+Generated clips live in `HorrorVideos/clips/<n>/` (gitignored) and are reused
+if the same story is rendered again, so a re-render only regenerates clips that
+are missing.
+
+### 11. Public hosting
 
 `web/Instagram/` and `web/TikTok/` hold the privacy policy, terms of service, and
 TikTok domain-verification files required for platform API review. Deploy them to
@@ -294,3 +396,12 @@ failed run no longer consumes a number. If it drifts, set it to the highest
 
 **Nothing renders when metadata appears.** `storyWatcher.py` is not running, or was
 started before `Metadata/` existed. Check `logs/watcher-*.err.log`.
+
+**Every video has the Minecraft background.** Look for `[!] AI background failed`
+in `logs/watcher-*.out.log`: the line names the cause (ComfyUI unreachable, a
+missing model file reported by ComfyUI, a clip timeout). `COMFYUI_DIR` unset
+or `BACKGROUND_MODE=minecraft` also select the fallback, silently.
+
+**LM Studio has no model loaded after a render.** The reload after generation
+failed (`lms load` not on PATH, or the model name in `LMS_MODEL` is wrong).
+n8n's next request will time out; run `lms load <model>` by hand and fix `.env`.

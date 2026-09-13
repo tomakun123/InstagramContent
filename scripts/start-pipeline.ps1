@@ -3,14 +3,16 @@
     Starts the whole content pipeline with one command.
 
 .DESCRIPTION
-    Brings up the five services the pipeline depends on, in dependency order,
+    Brings up the six services the pipeline depends on, in dependency order,
     waiting for each to report healthy before starting the next:
 
         1. LM Studio    (:1234)  - serves the local model n8n prompts
         2. n8n          (:5678)  - orchestration
         3. videoServer  (:8090)  - serves HorrorVideos\ for Instagram to fetch
         4. cloudflared           - public tunnel to n8n and the video server
-        5. storyWatcher.py       - renders a video when n8n drops metadata
+        5. ComfyUI      (:8188)  - generates the AI background clips (optional:
+                                   skipped when COMFYUI_DIR is not set)
+        6. storyWatcher.py       - renders a video when n8n drops metadata
 
     Safe to run twice: anything already running is left alone.
 
@@ -248,7 +250,7 @@ if ($Install) {
 
     Register-ScheduledTask -TaskName 'HorrorPipeline' `
                            -Action $action -Trigger $trigger -Settings $settings `
-                           -Description 'Starts LM Studio, n8n, cloudflared and the story watcher.' `
+                           -Description 'Starts LM Studio, n8n, cloudflared, ComfyUI and the story watcher.' `
                            -Force | Out-Null
     Write-Ok 'Task registered. The pipeline will now start at logon.'
     Write-Host 'Remove it with: Unregister-ScheduledTask -TaskName HorrorPipeline' -ForegroundColor DarkGray
@@ -380,7 +382,48 @@ if ($SkipTunnel) {
     }
 }
 
-# -- 5. story watcher --------------------------------------------------------
+# -- 5. ComfyUI --------------------------------------------------------------
+# Generates the per-beat background clips (Wan 2.2 5B). Optional: without it
+# generateContent.py renders over the Minecraft footage exactly as before. It
+# holds no VRAM until a workflow runs, so starting it beside LM Studio is fine;
+# generateContent.py juggles the two models at render time.
+Write-Step 'ComfyUI (:8188)'
+if (-not $env:COMFYUI_DIR) {
+    Write-Skip 'COMFYUI_DIR not set in .env (AI backgrounds disabled, Minecraft fallback)'
+} elseif (Test-PortListening -Port 8188) {
+    Write-Skip 'already listening on :8188'
+} else {
+    $comfyDir = $env:COMFYUI_DIR
+    if (-not (Test-Path $comfyDir)) { Abort "COMFYUI_DIR does not exist: $comfyDir" }
+
+    # Portable build: python_embeded\python.exe + ComfyUI\main.py.
+    # Git-clone install: a venv + main.py at the root.
+    $comfyPython = @(
+        (Join-Path $comfyDir 'python_embeded\python.exe'),
+        (Join-Path $comfyDir '.venv\Scripts\python.exe'),
+        (Join-Path $comfyDir 'venv\Scripts\python.exe')
+    ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+    $comfyMain = @(
+        (Join-Path $comfyDir 'ComfyUI\main.py'),
+        (Join-Path $comfyDir 'main.py')
+    ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+    if (-not $comfyPython -or -not $comfyMain) {
+        Abort "COMFYUI_DIR ($comfyDir) has no python_embeded\python.exe + ComfyUI\main.py (portable) or venv + main.py (git install)."
+    }
+
+    $comfyArgs = @('-s', $comfyMain, '--listen', '127.0.0.1', '--port', '8188', '--disable-auto-launch')
+    if ($env:COMFYUI_ARGS) { $comfyArgs += ($env:COMFYUI_ARGS -split '\s+') }
+
+    $p = Start-Logged -Name 'comfyui' -FilePath $comfyPython -ArgumentList $comfyArgs -WorkingDirectory $comfyDir
+    $Started['comfyui'] = $p.Id
+
+    if (-not (Wait-Healthy -Url 'http://127.0.0.1:8188/system_stats' -Timeout $TimeoutSeconds -Label 'ComfyUI')) {
+        Abort 'ComfyUI failed to start. Check logs\comfyui-*.err.log'
+    }
+    Write-Ok "healthy on :8188 (pid $($p.Id))"
+}
+
+# -- 6. story watcher --------------------------------------------------------
 Write-Step 'storyWatcher.py'
 
 $existing = Get-CimInstance Win32_Process -Filter "Name like '%python%'" -ErrorAction SilentlyContinue |

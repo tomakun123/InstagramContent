@@ -2,11 +2,18 @@
 
 Runs as a single pass for the story number currently in HorrorStories/counter.txt:
 
-  1. TTS      - edge_tts narration of HorrorStories/HorrorStory{n}.txt, capturing
-                word boundaries as it streams (no separate transcription step)
-  2. Music    - ffmpeg mix of the narration with looped background music
-  3. Render   - one ffmpeg pass: crop the background to 9:16, scale to 1080x1920,
-                burn in the subtitles via libass, mux the audio, encode with NVENC
+  1. TTS        - edge_tts narration of HorrorStories/HorrorStory{n}.txt, capturing
+                  word boundaries as it streams (no separate transcription step)
+  2. Background - split the narration into 10-15 s beats, have LM Studio write a
+                  shot description for each, unload the story model, generate one
+                  shot per beat in ComfyUI (a Flux still animated with a slow
+                  camera move by default, or a Wan 2.2 clip with --style video),
+                  stitch them, reload the model. Any failure here falls back to
+                  a random slice of the Minecraft footage so a broken generator
+                  never blocks publishing.
+  3. Music      - ffmpeg mix of the narration with looped background music
+  4. Render     - one ffmpeg pass: crop the background to 9:16, scale to 1080x1920,
+                  burn in the subtitles via libass, mux the audio, encode with NVENC
 
 The final file is written to a .part.mp4 and only renamed to .mp4 once the encode
 completes, so downstream consumers never observe a partial file.
@@ -15,6 +22,7 @@ import argparse
 import asyncio
 import json
 import random
+import shutil
 import subprocess
 import sys
 import time
@@ -22,8 +30,11 @@ import time
 import edge_tts
 from dotenv import load_dotenv
 
+import beats as beats_mod
+import clips
 import paths
 import subtitles
+import visualPrompts
 
 load_dotenv()
 paths.ensure_dirs()
@@ -50,6 +61,21 @@ parser.add_argument(
     type=int,
     default=None,
     help="Story number to render. Defaults to the value in counter.txt.",
+)
+parser.add_argument(
+    "--background",
+    choices=["ai", "minecraft"],
+    default=paths.background_mode(),
+    help="ai: generate a background per beat with ComfyUI (Minecraft on failure); "
+         "minecraft: skip generation. Default from BACKGROUND_MODE in .env.",
+)
+parser.add_argument(
+    "--style",
+    choices=["image", "video"],
+    default=paths.background_style(),
+    help="image: Flux still + slow camera move per beat (sharp, ~1 min/beat); "
+         "video: Wan 2.2 clip per beat (real motion, soft, ~5 min/beat). "
+         "Default from BACKGROUND_STYLE in .env.",
 )
 notify = parser.add_mutually_exclusive_group()
 notify.add_argument(
@@ -92,6 +118,17 @@ def probe_duration(path) -> float:
         check=True, capture_output=True, text=True,
     )
     return float(out.stdout.strip())
+
+
+def lms(*cmd_args) -> None:
+    """Run an `lms` CLI command, or do nothing if the CLI is not installed."""
+    exe = shutil.which("lms")
+    if not exe:
+        print("[!] lms CLI not on PATH; cannot manage LM Studio's VRAM")
+        return
+    # lms prints UTF-8 progress glyphs; the console default (cp1252) chokes on them.
+    subprocess.run([exe, *cmd_args], check=False, capture_output=True,
+                   encoding="utf-8", errors="replace")
 
 
 def rel(path) -> str:
@@ -162,8 +199,60 @@ if not lines:
     print("[X] No word boundaries returned by edge-tts; cannot build subtitles.")
     sys.exit(1)
 
+narration_duration = probe_duration(voice_path)
 
-# ======================= 2. BACKGROUND MUSIC =======================
+
+# ======================= 2. BACKGROUND CLIPS =======================
+# Order matters: the shot descriptions need the story model, the video model
+# needs the VRAM the story model is holding (7 GB of 8). So: prompts first,
+# then unload, generate, and reload before the render so the next n8n run does
+# not wait on a cold model.
+background = None          # None -> Minecraft fallback
+prompt_time = clip_time = 0.0
+beat_count = 0
+
+if args.background == "ai":
+    llm_unloaded = False
+    try:
+        beat_list = beats_mod.segment(
+            words, narration_duration, beats_mod.sentence_ends(text, words))
+        beat_count = len(beat_list)
+        print(f"Background ({args.style}): {beat_count} beats -> "
+              + ", ".join(f"{b.duration:.1f}s" for b in beat_list))
+
+        # Check the generator is there before spending an LLM round-trip on
+        # prompts nothing will consume.
+        if not clips.is_available():
+            raise clips.ClipError(f"ComfyUI not reachable at {paths.comfy_url()}")
+
+        prompt_start = time.perf_counter()
+        prompts = visualPrompts.for_beats(text, beat_list, args.style)
+        prompt_time = time.perf_counter() - prompt_start
+        prefix_len = len(visualPrompts.style_prefix(args.style))
+        for k, pr in enumerate(prompts):
+            print(f"  beat {k}: {pr[prefix_len:]}")
+
+        lms("unload", "--all")
+        llm_unloaded = True
+
+        clip_start = time.perf_counter()
+        background = clips.build_background(
+            story_number, beat_list, prompts, visualPrompts.NEGATIVE, args.style)
+        clip_time = time.perf_counter() - clip_start
+        print(f"[OK] Background clips: {background}")
+    except Exception as e:  # noqa: BLE001 - any failure means "use the stock footage"
+        print(f"[!] AI background failed ({type(e).__name__}: {e}); "
+              f"falling back to {paths.BACKGROUND_VIDEO.name}")
+        background = None
+    finally:
+        if llm_unloaded:
+            clips.free_gpu()
+            lms("load", paths.lms_model(), "-y")
+else:
+    print("Background: minecraft (--background minecraft)")
+
+
+# ======================= 3. BACKGROUND MUSIC =======================
 print(f"Mixing music into: {mixed_path}")
 mix_start = time.perf_counter()
 
@@ -189,19 +278,25 @@ mix_time = time.perf_counter() - mix_start
 print(f"[OK] Mixed audio: {mixed_path}")
 
 
-# ======================= 3. RENDER =======================
+# ======================= 4. RENDER =======================
 audio_duration = probe_duration(mixed_path)
-video_duration = probe_duration(paths.BACKGROUND_VIDEO)
 
-if video_duration <= audio_duration:
+if background is not None:
+    # generated clips tile the narration exactly, so play them from the top
+    background_video = background
     start_time = 0.0
 else:
-    start_time = random.uniform(0, video_duration - audio_duration)
+    background_video = paths.BACKGROUND_VIDEO
+    video_duration = probe_duration(background_video)
+    if video_duration <= audio_duration:
+        start_time = 0.0
+    else:
+        start_time = random.uniform(0, video_duration - audio_duration)
 
 print(f"Saving video to (temp): {temp_output_path}")
 print(f"Final video will be:    {output_path}")
 print(f"Renderer: {args.renderer}  |  {audio_duration:.1f}s @ {FPS}fps "
-      f"from offset {start_time:.1f}s")
+      f"from offset {start_time:.1f}s of {background_video.name}")
 
 render_start = time.perf_counter()
 
@@ -223,7 +318,7 @@ if args.renderer == "ffmpeg":
             "ffmpeg", "-y", "-v", "error", "-stats",
             # -ss before -i is input seeking: cheap even far into a 69-minute file
             "-ss", f"{start_time:.3f}", "-t", f"{audio_duration:.3f}",
-            "-i", rel(paths.BACKGROUND_VIDEO),
+            "-i", rel(background_video),
             "-i", rel(mixed_path),
             "-filter_complex", vf,
             "-map", "[v]", "-map", "1:a",
@@ -268,7 +363,7 @@ else:
     SUB_W = int(TARGET_W * 0.92)
     SUB_H = int(TARGET_H * 0.05)
 
-    video_clip = VideoFileClip(str(paths.BACKGROUND_VIDEO)).without_audio()
+    video_clip = VideoFileClip(str(background_video)).without_audio()
     segment = video_clip.subclipped(start_time, start_time + audio_duration)
 
     w, h = segment.size
@@ -321,16 +416,20 @@ render_time = time.perf_counter() - render_start
 temp_output_path.replace(output_path)
 print(f"[OK] Finalized video: {output_path}")
 
-total = tts_time + mix_time + render_time
+total = tts_time + prompt_time + clip_time + mix_time + render_time
 print("\n====== PERFORMANCE SUMMARY ======")
 print(f"TTS + word timings:  {format_time(tts_time)}")
+if background is not None:
+    kind = "Stills" if args.style == "image" else "Clips"
+    print(f"Shot prompts (LLM):  {format_time(prompt_time)}")
+    print(f"{kind} ({beat_count} beats):    {format_time(clip_time)}")
 print(f"Music mix:           {format_time(mix_time)}")
 print(f"Render ({args.renderer:<7}):     {format_time(render_time)}")
 print(f"Total:               {format_time(total)}")
 print("================================\n")
 
 
-# ======================= 4. NOTIFY n8n =======================
+# ======================= 5. NOTIFY n8n =======================
 # Event-driven handoff: publishing starts when the render actually finishes,
 # rather than after a fixed sleep that cannot observe it.
 webhook = paths.render_webhook()
@@ -348,6 +447,7 @@ elif webhook:
             "metadata_path": str(paths.METADATA / f"HorrorStory{story_number}_metadata.json"),
             "duration_seconds": round(audio_duration, 2),
             "render_seconds": round(render_time, 2),
+            "background": args.style if background is not None else "minecraft",
         }).encode("utf-8")
 
         req = urllib.request.Request(
