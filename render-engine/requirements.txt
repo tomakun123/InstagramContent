@@ -1,0 +1,10 @@
+# Client-side only. This is what runs on the WINDOWS box to drive the pod — torch,
+# diffusers and ComfyUI itself live on the pod and are installed by setup/bootstrap.sh.
+# Keeping them out of here is deliberate: nothing in this list needs a GPU.
+
+requests
+python-dotenv
+
+# Pod lifecycle. Used rather than raw REST v1 because v1 stops serving 2026-11-15 and
+# pod CRUD has no published v2 migration path yet.
+runpod

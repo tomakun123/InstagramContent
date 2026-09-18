@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tomakun123/horror-render-engine/schema/shotlist.schema.json",
+  "title": "Shot list",
+  "description": "The whole contract between InstagramContent and horror-render-engine. Shot list in, numbered clips out. Keep a copy in both repos and bump `version` together.",
+  "type": "object",
+  "required": ["version", "story_id", "shots"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "story_id": {
+      "type": "string",
+      "description": "Matches the existing naming, e.g. 'HorrorStory42'. Clips land in clips/<story_id>/.",
+      "pattern": "^HorrorStory[0-9]+$"
+    },
+    "style": {
+      "type": "object",
+      "description": "Applied to every shot so one story looks like one story. Scenes vary and there is no recurring character, so a shared palette and grade is all the continuity needed.",
+      "additionalProperties": false,
+      "properties": {
+        "prompt_suffix": {
+          "type": "string",
+          "description": "Appended to every keyframe prompt, e.g. 'desaturated, heavy film grain, 1990s VHS'."
+        },
+        "reference_image": {
+          "type": "string",
+          "description": "Optional path to a style reference, relative to the shot list."
+        }
+      }
+    },
+    "shots": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["index", "start_ms", "end_ms", "keyframe_prompt", "motion_prompt"],
+        "additionalProperties": false,
+        "properties": {
+          "index": { "type": "integer", "minimum": 0 },
+          "start_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Snapped to an edge-tts WordBoundary timestamp, so cuts land on narration beats rather than arbitrary intervals."
+          },
+          "end_ms": { "type": "integer", "minimum": 1 },
+          "keyframe_prompt": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The still. Composition, subject, lighting — no motion."
+          },
+          "motion_prompt": {
+            "type": "string",
+            "minLength": 1,
+            "description": "What MOVES, and the whole point of the project: it describes the verb completing over the shot's duration. 'her hand closes around the doorknob', not 'a hand and a doorknob'. A shot whose motion prompt is static reproduces the problem being solved."
+          },
+          "narration_span": {
+            "type": "string",
+            "description": "The words spoken over this shot. Diagnostic only — lets a human see whether the visual matches what is being said."
+          }
+        }
+      }
+    }
+  }
+}
