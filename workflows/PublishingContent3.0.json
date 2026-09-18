@@ -50,7 +50,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return $input.all().map(item => {\n  item.json.ytBody = {\n    snippet: {\n      title: item.json.title + ': ' + item.json.hook + ' #shorts',\n      description: item.json.caption_youtube + '\\n\\n#shorts',\n      tags: [\n        \"shorts\",\"ytshorts\",\"horrorstories\",\"scary\",\"horrorshorts\",\n        \"creepystories\",\"watchtilltheend\",\"disturbing\",\"paranormal\",\"dontwatchalone\"\n      ],\n      categoryId: 24\n    },\n    status: {\n      privacyStatus: \"private\",\n      selfDeclaredMadeForKids: false\n    }\n  };\n  return item;\n});\n"
+        "jsCode": "// YouTube hard limits: title 100 chars, description 5000 chars.\n// The title is \"<title>: <hook> #shorts\"; when that overflows, trim the hook on a\n// word boundary (or drop it) rather than let the upload init fail with\n// \"invalid or empty video title\".\nconst TITLE_MAX = 100;\nconst DESC_MAX = 5000;\nconst SUFFIX = ' #shorts';\n\nfunction buildTitle(title, hook) {\n  title = String(title || '').trim();\n  hook = String(hook || '').trim();\n  const base = title + SUFFIX;\n  if (base.length >= TITLE_MAX) return base.slice(0, TITLE_MAX);\n  if (!hook) return base;\n  const full = title + ': ' + hook + SUFFIX;\n  if (full.length <= TITLE_MAX) return full;\n  const room = TITLE_MAX - (title + ': ' + SUFFIX).length - 1; // 1 for the ellipsis\n  if (room < 8) return base;\n  let cut = hook.slice(0, room);\n  const space = cut.lastIndexOf(' ');\n  if (space > room / 2) cut = cut.slice(0, space);\n  return title + ': ' + cut.replace(/[\\s,;:.-]+$/, '') + '…' + SUFFIX;\n}\n\nreturn $input.all().map(item => {\n  item.json.ytBody = {\n    snippet: {\n      title: buildTitle(item.json.title, item.json.hook),\n      description: (String(item.json.caption_youtube || '') + '\\n\\n#shorts').slice(0, DESC_MAX),\n      tags: [\n        \"shorts\",\"ytshorts\",\"horrorstories\",\"scary\",\"horrorshorts\",\n        \"creepystories\",\"watchtilltheend\",\"disturbing\",\"paranormal\",\"dontwatchalone\"\n      ],\n      categoryId: 24\n    },\n    status: {\n      privacyStatus: \"private\",\n      selfDeclaredMadeForKids: false\n    }\n  };\n  return item;\n});\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -318,7 +318,10 @@
           "name": "YouTube account"
         }
       },
-      "onError": "continueErrorOutput"
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 10000
     },
     {
       "parameters": {

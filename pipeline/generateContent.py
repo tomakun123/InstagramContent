@@ -7,8 +7,9 @@ Runs as a single pass for the story number currently in HorrorStories/counter.tx
   2. Background - split the narration into 10-15 s beats, have LM Studio write a
                   shot description for each, unload the story model, generate one
                   shot per beat in ComfyUI (a Flux still animated with a slow
-                  camera move by default, or a Wan 2.2 clip with --style video),
-                  stitch them, reload the model. Any failure here falls back to
+                  camera move by default, a Wan 2.2 clip with --style video, or
+                  a still plus chained Wan image-to-video shots with --style
+                  film), stitch them, reload the model. Any failure here falls back to
                   a random slice of the Minecraft footage so a broken generator
                   never blocks publishing.
   3. Music      - ffmpeg mix of the narration with looped background music
@@ -71,10 +72,12 @@ parser.add_argument(
 )
 parser.add_argument(
     "--style",
-    choices=["image", "video"],
+    choices=["image", "video", "film"],
     default=paths.background_style(),
     help="image: Flux still + slow camera move per beat (sharp, ~1 min/beat); "
-         "video: Wan 2.2 clip per beat (real motion, soft, ~5 min/beat). "
+         "video: Wan 2.2 clip per beat, ping-ponged (real motion, soft, ~5 min/beat); "
+         "film: Flux still + chained Wan 2.2 image-to-video shots per beat "
+         "(continuous motion, needs a distilled 4-step model; see SETUP section 10). "
          "Default from BACKGROUND_STYLE in .env.",
 )
 notify = parser.add_mutually_exclusive_group()
@@ -310,6 +313,11 @@ if args.renderer == "ffmpeg":
         # lanczos rather than the default bicubic: the crop is only 608px wide,
         # so this frame is always being upscaled and the scaler choice shows.
         f"scale={TARGET_W}:{TARGET_H}:flags=lanczos,"
+        # A light finish on every background: a touch of sharpening for the
+        # upscale, temporal film grain (hides residual softness and banding in
+        # the dark areas) and a soft vignette. Before the subtitles so the
+        # text stays clean.
+        "unsharp=3:3:0.4,noise=alls=6:allf=t,vignette=PI/5,"
         f"ass={rel(subs_path)}:fontsdir=assets[v]"
     )
 
@@ -420,7 +428,7 @@ total = tts_time + prompt_time + clip_time + mix_time + render_time
 print("\n====== PERFORMANCE SUMMARY ======")
 print(f"TTS + word timings:  {format_time(tts_time)}")
 if background is not None:
-    kind = "Stills" if args.style == "image" else "Clips"
+    kind = {"image": "Stills", "video": "Clips"}.get(args.style, "Shots")
     print(f"Shot prompts (LLM):  {format_time(prompt_time)}")
     print(f"{kind} ({beat_count} beats):    {format_time(clip_time)}")
 print(f"Music mix:           {format_time(mix_time)}")

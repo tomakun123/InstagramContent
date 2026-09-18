@@ -23,6 +23,7 @@ BACKGROUND_VIDEO = ASSETS / "MCParkour.mp4"
 BACKGROUND_MUSIC = ASSETS / "musicOutput.mp3"
 COMFY_WORKFLOW = ASSETS / "comfy" / "wan22_5b_t2v_api.json"          # video style
 COMFY_IMAGE_WORKFLOW = ASSETS / "comfy" / "flux_schnell_t2i_api.json"  # image style
+COMFY_I2V_WORKFLOW = ASSETS / "comfy" / "wan22_5b_i2v_api.json"        # film style
 
 # State files
 COUNTER = STORIES / "counter.txt"
@@ -71,7 +72,10 @@ def background_mode() -> str:
 
 
 def background_style() -> str:
-    """'image' (Flux still + Ken Burns per beat) or 'video' (Wan 2.2 clip per beat)."""
+    """'image' (Flux still + Ken Burns per beat), 'video' (one Wan 2.2 clip per
+    beat, ping-ponged) or 'film' (Flux still + a chain of Wan 2.2 image-to-video
+    shots per beat). Default stays 'image' until the film benchmark in
+    docs/SETUP.md section 10 has been run on this machine."""
     return _env("BACKGROUND_STYLE", "image").lower()
 
 

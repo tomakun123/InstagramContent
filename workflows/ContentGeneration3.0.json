@@ -314,7 +314,8 @@
         1248
       ],
       "id": "e2b66c3b-3bf9-45ee-bfe9-5242ca1d9250",
-      "name": "Code in JavaScript"
+      "name": "Code in JavaScript",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -576,6 +577,33 @@
       ],
       "id": "6e8df8d2-0afd-455b-8778-ae1b4901aa82",
       "name": "Commit Counter"
+    },
+    {
+      "parameters": {
+        "command": "powershell -Command \"Remove-Item 'C:\\Users\\Thomas M\\Desktop\\InstagramContent\\HorrorStories\\generate_lock.lock' -ErrorAction SilentlyContinue\"\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        1472
+      ],
+      "id": "e0ed8977-0e43-42dc-8efe-3bcd6c410d8d",
+      "name": "Release Lock On Failure",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Metadata generation failed: {{ $('Code in JavaScript').item.json.error?.message || $('Code in JavaScript').item.json.error || 'unknown error' }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        128,
+        1472
+      ],
+      "id": "967f849e-9398-42bc-b000-1081d60c2c80",
+      "name": "Stop On Metadata Failure"
     }
   ],
   "pinData": {},
@@ -709,6 +737,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Release Lock On Failure",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -828,6 +863,17 @@
         [
           {
             "node": "Pull New Counter Value",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Release Lock On Failure": {
+      "main": [
+        [
+          {
+            "node": "Stop On Metadata Failure",
             "type": "main",
             "index": 0
           }

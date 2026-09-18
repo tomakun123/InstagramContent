@@ -73,9 +73,15 @@ LMS_MODEL=mn-12b-mag-mell-r1            # optional, this is the default; see §5
 COMFYUI_DIR=C:\ComfyUI_windows_portable  # the launcher starts ComfyUI from here
 COMFYUI_URL=http://127.0.0.1:8188        # optional, this is the default
 BACKGROUND_MODE=ai                       # ai (default) | minecraft
-BACKGROUND_STYLE=image                   # image (default, Flux still + camera move) | video (Wan clip)
-#COMFY_UNET=...                          # optional: a different Wan 2.2 5B checkpoint file name
-#COMFY_WIDTH=704 / COMFY_HEIGHT=1280 / COMFY_LENGTH=121   # optional: model-native geometry, ~5x slower on a 3050
+BACKGROUND_STYLE=film                    # film (Flux still + chained Wan I2V shots) | image (still + camera move) | video (one Wan clip, looped)
+COMFY_UNET=Wan2.2-TI2V-5B-Turbo-Q8_0.gguf # film: distilled 4-step checkpoint (.gguf needs the ComfyUI-GGUF node); also overrides the video style
+#COMFY_LORA=...                          # film: alternatively a 4-step LoRA in models\loras on top of the fp16 checkpoint
+#COMFY_FILM_W=704 / COMFY_FILM_H=1280    # film shot geometry (multiples of 16); 544x960 is ~2x faster
+#COMFY_SHOT_FRAMES=121                   # film: 4k+1 frames per shot, 121 = 5 s
+#COMFY_FILM_STEPS=4 / COMFY_FILM_CFG=1.0 / COMFY_FILM_SHIFT=8
+#MAX_SHOTS_PER_BEAT=4
+#COMFY_TE_DEVICE=cpu                     # text encoder on the CPU - only with >= 32 GB RAM
+#COMFY_WIDTH=704 / COMFY_HEIGHT=1280 / COMFY_LENGTH=121   # video style geometry; COMFY_STEPS / COMFY_CFG likewise
 
 # Render -> publish handoff. generateContent.py POSTs here when a render
 # finishes, which is what triggers PublishingContent2.0. If unset, videos are
@@ -273,13 +279,14 @@ FAILED … Stage: TT Refresh Token"; repeat step b.
 ### 10. AI backgrounds (ComfyUI + Flux / Wan 2.2)
 
 `generateContent.py` splits each narration into 10–15 s beats, asks the story
-model for a shot description per beat, and generates one shot per beat in
-ComfyUI. Two styles, chosen by `BACKGROUND_STYLE` in `.env` (or `--style`):
+model for a shot description per beat, and generates the beat's footage in
+ComfyUI. Three styles, chosen by `BACKGROUND_STYLE` in `.env` (or `--style`):
 
 | Style | Model | Per beat | Look |
 |---|---|---|---|
-| **`image`** (default) | Flux.1-schnell still, animated with a slow ffmpeg push-in / pull-out / pan | ~1 min | sharp 1080x1920, cinematic still |
-| `video` | Wan 2.2 TI2V-5B clip, ping-ponged to the beat length | ~5 min | real motion, soft (480p upscaled) |
+| **`image`** (default until §10f is benchmarked) | Flux.1-schnell still, animated with a slow ffmpeg push-in / pull-out / pan | ~1 min | sharp 1080x1920, cinematic still |
+| `video` | Wan 2.2 TI2V-5B clip, ping-ponged to the beat length | ~5 min | real motion, soft (480p upscaled), visibly loops |
+| `film` | Flux still as the first frame, then 2–3 chained Wan 2.2 5B *Turbo* image-to-video shots (5 s each, each continuing from the last frame of the previous one with a different camera move) | ~1 min + 2–3 × shot time (§10f) | continuous motion at native 704x1280, no loop, no reversal |
 
 The shots are stitched and the subtitles are rendered over them instead of
 the Minecraft footage. Everything is local; the step costs nothing but GPU
@@ -347,7 +354,64 @@ fails too, the story falls back to the Minecraft footage.
 **e. Cadence.** Generation is the new long pole (≈ 4 × clip time per story).
 Set the `Schedule Trigger` interval in `ContentGeneration3.0` so a run finishes
 before the next starts — ~96 minutes for 15 stories a day gives ~5× headroom
-at the default geometry.
+at the default geometry. For the `film` style take the projection the
+benchmark in §10f prints, add ~5 min for TTS/mix/render/publish and 25 %
+margin; with a ~4 min shot that is roughly 90–120 minutes.
+
+**f. The `film` style (distilled Wan 2.2 5B Turbo).** The 20-step model above
+is why `video` ping-pongs one 3.4 s clip: a beat's worth of real footage would
+cost 15–20 min. A 4-step distilled checkpoint makes a 5 s shot at the model's
+native 704x1280 about as expensive as one 480x832 clip is today, so `film`
+spends 2–3 shots per beat and chains them (each shot starts on the previous
+shot's last frame) — continuous motion, nothing looped.
+
+1. Install the GGUF loader node: in `COMFYUI_DIR`, run
+   `git clone https://github.com/city96/ComfyUI-GGUF ComfyUI\custom_nodes\ComfyUI-GGUF`
+   then `python_embeded\python.exe -m pip install -r ComfyUI\custom_nodes\ComfyUI-GGUF\requirements.txt`
+   and restart ComfyUI.
+2. Download a quant of `Wan2.2-TI2V-5B-Turbo` from
+   https://huggingface.co/hum-ma/Wan2.2-TI2V-5B-Turbo-GGUF into
+   `models\diffusion_models\`. **Q8_0 (5.4 GB)** is the one to use: it fits the
+   RTX 3050 with room for the 704x1280 latents, and it is the closest to the
+   fp16 Turbo. The text encoder and VAE from §10b are reused. (The Turbo
+   author, `quanhaol/Wan2.2-TI2V-5B-Turbo`, only ships a 20 GB `model.pt`,
+   which ComfyUI's loader cannot read — hence the GGUF.)
+3. In `.env`: `COMFY_UNET=<the .gguf file name>`; leave `COMFY_LORA` unset.
+   (If a 4-step *LoRA* for the 5B turns up instead, set `COMFY_LORA` to the
+   file in `models\loras\` and keep the fp16 checkpoint; the workflow has an
+   optional LoRA node that `clips.py` drops when `COMFY_LORA` is empty.)
+4. Benchmark with LM Studio unloaded:
+
+   ```powershell
+   python .\pipeline\clips.py --film "an abandoned farmhouse at night, one lit window"
+   ```
+
+   It generates the still and one I2V shot with the exact workflow the
+   pipeline uses, prints both timings and the projected time for a 5-beat
+   story, and leaves the shot in `HorrorVideos\clips\_bench\` — watch it:
+   the motion should be slow and the frame should not drift away from the
+   still. Expected on the 3050 at 4 steps, 121 frames: ~4 min at 704x1280
+   (`COMFY_FILM_W/H`), ~1.7 min at 544x960, ~1 min at 480x832. Pick the
+   largest geometry whose projected story time fits the cadence you want.
+5. Set `BACKGROUND_STYLE=film` and restart the pipeline. Per-beat files land
+   in `HorrorVideos\clips\<n>\` as `beat<k>_still.png` and `beat<k>_shot<j>.mp4`
+   and are reused on a re-render like the other styles.
+
+**g. With 32 GB of system RAM.** The fp16 5B checkpoint (10 GB) plus the umt5
+encoder (6.5 GB) already exceed 16 GB while loading, so ComfyUI streams
+weights through the card. With 32 GB two things become worthwhile:
+
+- `COMFY_TE_DEVICE=cpu` runs the text encoder on the CPU. Encoding a prompt
+  takes ~15 s once per shot, and the entire 8 GB stays with the diffusion
+  model — larger geometries stop running out of VRAM.
+- Wan 2.2 **14B** I2V (`Wan2.2-I2V-A14B`) becomes possible through the same
+  GGUF loader with Q4_K_M high/low-noise experts (~9 GB each) and the
+  lightx2v 4-step distills (`lightx2v/Wan2.2-Distill-Models`): ComfyUI keeps
+  the experts in RAM and swaps them through the card. Expect 10–20 min per
+  5 s shot on the 3050 — a one-shot-per-beat budget (set
+  `MAX_SHOTS_PER_BEAT=1`) — and a separate two-sampler workflow file; benchmark
+  it with the `--film` harness by pointing `clips.py` at that workflow before
+  committing a cadence to it.
 
 VRAM: the RTX 3050 has 8 GB and the story model holds 7 of them, so
 `generateContent.py` unloads it (`lms unload --all`) after the shot prompts are

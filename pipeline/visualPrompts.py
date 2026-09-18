@@ -35,7 +35,27 @@ STYLE = STYLE_VIDEO   # kept for callers that predate the image style
 
 
 def style_prefix(style: str) -> str:
-    return STYLE_IMAGE if style == "image" else STYLE_VIDEO
+    # film starts from a Flux still, so its LLM prompt is an image prompt
+    return STYLE_VIDEO if style == "video" else STYLE_IMAGE
+
+
+# Camera moves for the film style's image-to-video shots, rotated per shot so
+# the 2-3 shots of a beat differ in motion but not in subject. Written in
+# code, not by the LLM: the model would invent new objects mid-beat, and the
+# still already fixes the scene.
+MOTIONS = [
+    "slow dolly forward, fog drifting through the frame",
+    "slow pan to the left, the light flickering faintly",
+    "slow pull back, shadows deepening at the edges",
+    "gentle handheld drift, dust and mist moving in the light",
+    "slow tilt upward, the light source swaying slightly",
+    "slow pan to the right, fog thickening in the distance",
+]
+
+
+def motion_prompt(scene: str, k: int, j: int) -> str:
+    """Prompt for shot j of beat k: the channel look, the still's scene, one move."""
+    return f"{STYLE_VIDEO}{scene.rstrip('. ')}. {MOTIONS[(k + j) % len(MOTIONS)]}"
 # The clip sits under burned-in subtitles and a voice-over, so anything that
 # competes with them - text, faces talking, bright flat light - is unwanted.
 NEGATIVE = (
@@ -43,6 +63,9 @@ NEGATIVE = (
     "bright daylight, overexposed, cartoon, anime, low quality, blurry, "
     "distorted hands, extra limbs, static image, still frame"
 )
+# Continuation shots start on the previous shot's last frame and must stay in
+# the same place - a scene change reads as a glitch, not a cut.
+NEGATIVE_I2V = NEGATIVE + ", scene change, cut, new location, fast motion, jump"
 
 MAX_PROMPT_WORDS = 60
 TIMEOUT_S = 180
@@ -109,7 +132,7 @@ def _ask(story_text: str, beats: Sequence[Beat], style: str) -> List[str]:
     payload = json.dumps({
         "model": paths.lms_model(),
         "messages": [{"role": "system",
-                      "content": SYSTEM_IMAGE if style == "image" else SYSTEM_VIDEO},
+                      "content": SYSTEM_VIDEO if style == "video" else SYSTEM_IMAGE},
                      {"role": "user", "content": user}],
         "temperature": 0.7,
         "max_tokens": MAX_TOKENS_PER_BEAT * len(beats) + 100,

@@ -171,15 +171,32 @@ production value than soft real motion, so `image` is the default and
 `video` stays available per run (`--style video`) or globally
 (`BACKGROUND_STYLE`).
 
-### Why the video clips are ping-ponged
+### Why the `video` clips are ping-ponged
 
-Wan 2.2 5B produces ~3.4 s (81 frames at 480x832 — the geometry the RTX 3050
-can do in ~4.6 min; see SETUP §10d) per generation and a beat is 10–15 s.
-Rather than three or four generations per beat, `clips.fit_to_duration` plays
-the clip forward then backward (seamless — the reversal starts on the frame it
-ended on), repeats that loop as often as the beat needs, and stretches the
-remainder by at most 1.5x. On slow atmospheric footage the reversal is
-invisible; it keeps the cost at one generation per beat.
+Wan 2.2 5B at 20 steps produces ~3.4 s (81 frames at 480x832 — the geometry
+the RTX 3050 can do in ~4.6 min; see SETUP §10d) per generation and a beat is
+10–15 s. Rather than three or four generations per beat,
+`clips.fit_to_duration` plays the clip forward then backward, repeats that
+loop as often as the beat needs, and stretches the remainder by at most 1.5x.
+It keeps the cost at one generation per beat, but the repetition is visible —
+which is what the `film` style exists to fix.
+
+### Why `film` chains shots from the last frame
+
+With a distilled 4-step checkpoint (SETUP §10f) a 5 s shot at the model's
+native 704x1280 costs about what one looped 480p clip used to, so a beat can
+afford real footage. `clips.build_film` generates a Flux still per beat (the
+establishing frame — sharp, and it pins the scene), animates it with Wan
+image-to-video, then starts each further shot on the previous shot's last
+frame (`clips.last_frame`) with a different camera move from
+`visualPrompts.MOTIONS`. The joins are continuous because the next shot
+literally begins where the last one stopped; `clips.fit_chain` trims the
+over-covered tail and never reverses. Motion phrases are fixed in code, not
+written by the LLM, so a continuation shot cannot introduce a new subject.
+
+Stills are generated for every beat before any shot: Flux and Wan cannot
+share the 8 GB card, and alternating them per beat would reload ~10 GB of
+weights each time.
 
 ### Why a webhook rather than a timer
 

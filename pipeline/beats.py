@@ -10,9 +10,10 @@ import re
 from dataclasses import dataclass
 from typing import List, Sequence, Set, Tuple
 
-# Seconds. The model produces ~3.4 s clips; clips.fit_to_duration ping-pongs
-# one to ~7 s, loops that and stretches the remainder by at most 1.5x, so any
-# beat in this range costs exactly one generation.
+# Seconds. image/video styles spend one generation per beat (a still with a
+# camera move, or a ~3.4 s clip ping-ponged and stretched); the film style
+# covers a beat with 2-3 chained 5 s image-to-video shots (clips.SHOT_S), so
+# this range keeps every beat at a handful of shots.
 TARGET_LEN = 12.0
 MIN_LEN = 10.0
 MAX_LEN = 15.0
